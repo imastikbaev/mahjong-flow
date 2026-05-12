@@ -66,8 +66,7 @@ export default function Modal({
             exit={{ opacity: 0, scale: 0.94, y: 12 }}
             transition={{ type: 'spring', stiffness: 340, damping: 28 }}
             className={`relative w-full ${maxWidth}
-                        bg-white dark:bg-slate-900
-                        border border-slate-200 dark:border-slate-700
+                        bg-[#0e0e0e] border border-white/[0.07]
                         rounded-2xl shadow-2xl overflow-hidden`}
             onClick={(e) => e.stopPropagation()}
           >

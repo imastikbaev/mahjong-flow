@@ -5,9 +5,11 @@ import { useMahjongStore, hasAvailableMoves } from '@/store/mahjongStore';
 
 interface TopBarProps {
   onProClick: () => void;
+  onProfileClick: () => void;
+  nickname: string;
 }
 
-export default function TopBar({ onProClick }: TopBarProps) {
+export default function TopBar({ onProClick, onProfileClick, nickname }: TopBarProps) {
   const tiles          = useMahjongStore((s) => s.tiles);
   const initBoard      = useMahjongStore((s) => s.initBoard);
   const isComplete     = useMahjongStore((s) => s.isComplete);
@@ -53,10 +55,20 @@ export default function TopBar({ onProClick }: TopBarProps) {
       border-b border-white/[0.06]
       sticky top-0 z-50
     ">
-      {/* Brand */}
-      <div className="flex items-baseline gap-1">
-        <span className="text-sm font-normal tracking-tight text-neutral-200">Mahjong</span>
-        <span className="text-sm font-light tracking-tight text-neutral-500">Flow</span>
+      {/* Brand + profile */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-baseline gap-1">
+          <span className="text-sm font-normal tracking-tight text-neutral-200">Mahjong</span>
+          <span className="text-sm font-light tracking-tight text-neutral-500">Flow</span>
+        </div>
+        <button
+          onClick={onProfileClick}
+          className="text-[11px] font-normal tracking-tight text-neutral-600
+                     hover:text-neutral-300 transition-colors duration-150"
+          title="Edit profile"
+        >
+          {nickname || 'anonymous'}
+        </button>
       </div>
 
       {/* Stats — centred, minimal */}
