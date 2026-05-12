@@ -5,33 +5,26 @@ import { Tile } from '@/store/mahjongStore';
 import { TILE_SYMBOLS, TILE_COLORS } from './tileSymbols';
 
 // ---------------------------------------------------------------------------
-// Layout constants (pixels)
+// Layout constants (pixels) — unchanged from game engine
 // ---------------------------------------------------------------------------
 
-/** Rendered width of one tile in px. */
-export const TILE_W = 52;
-/** Rendered height of one tile in px. */
-export const TILE_H = 56;
-/** Horizontal spacing between grid columns (x-step = 2 units). */
-export const STEP_X = TILE_W / 2; // each grid unit = 26px
-/** Vertical spacing between grid rows (y-step = 2 units). */
-export const STEP_Y = TILE_H / 2; // each grid unit = 28px
-/** How many extra pixels each z-layer shifts the tile up and to the right. */
+export const TILE_W      = 52;
+export const TILE_H      = 56;
+export const STEP_X      = TILE_W / 2;
+export const STEP_Y      = TILE_H / 2;
 export const LAYER_OFFSET = 4;
 
 // ---------------------------------------------------------------------------
-// Shadow & depth helpers
+// Depth shadow — scales with z-layer for a convincing stacked-tile look
+// against the dark background.
 // ---------------------------------------------------------------------------
 
-/**
- * Returns a Tailwind box-shadow class that grows with the z-layer.
- * Ground tiles get a subtle shadow; high tiles look more "lifted".
- */
-function shadowClass(z: number): string {
-  if (z === 0) return 'shadow-md';
-  if (z === 1) return 'shadow-lg';
-  if (z === 2) return 'shadow-xl';
-  return 'shadow-2xl';
+function shadowClass(z: number, isSelected: boolean): string {
+  if (isSelected) return ''; // selected state uses an inline neon glow instead
+  if (z === 0) return 'shadow-[0_4px_14px_rgba(0,0,0,0.6)]';
+  if (z === 1) return 'shadow-[0_6px_20px_rgba(0,0,0,0.7)]';
+  if (z === 2) return 'shadow-[0_8px_26px_rgba(0,0,0,0.75)]';
+  return        'shadow-[0_10px_34px_rgba(0,0,0,0.85)]';
 }
 
 // ---------------------------------------------------------------------------
@@ -48,11 +41,8 @@ export default function TileCell({ tile, isFree, onClick }: TileCellProps) {
   const symbol = TILE_SYMBOLS[tile.type % TILE_SYMBOLS.length];
   const color  = TILE_COLORS[tile.type % TILE_COLORS.length];
 
-  // Pixel position: each grid unit is STEP px; z shifts tile up-right
-  const left = tile.x * STEP_X + tile.z * LAYER_OFFSET;
-  const top  = tile.y * STEP_Y - tile.z * LAYER_OFFSET;
-
-  // z-index so higher layers render on top of lower ones
+  const left   = tile.x * STEP_X + tile.z * LAYER_OFFSET;
+  const top    = tile.y * STEP_Y - tile.z * LAYER_OFFSET;
   const zIndex = tile.z * 20 + (tile.state === 'selected' ? 200 : 0);
 
   const isSelected = tile.state === 'selected';
@@ -63,64 +53,84 @@ export default function TileCell({ tile, isFree, onClick }: TileCellProps) {
       {!isMatched && (
         <motion.button
           key={tile.id}
-          // --- Exit animation: matched tiles shrink and fade ---
-          exit={{ scale: 0.4, opacity: 0, transition: { duration: 0.28, ease: 'easeIn' } }}
-          // --- Entrance: subtle pop-in on first render ---
-          initial={{ scale: 0.85, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1, transition: { duration: 0.18 } }}
-          // --- Selection spring ---
-          whileTap={isFree ? { scale: 0.93 } : {}}
+          exit={{ scale: 0.35, opacity: 0, transition: { duration: 0.25, ease: 'easeIn' } }}
+          initial={{ scale: 0.82, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1, transition: { duration: 0.16 } }}
+          whileTap={isFree ? { scale: 0.91 } : {}}
           style={{
             position: 'absolute',
             left,
             top,
-            width: TILE_W,
+            width:  TILE_W,
             height: TILE_H,
             zIndex,
+            // Neon glow injected as inline style so Tailwind's JIT doesn't need
+            // to scan the dynamic string — keeps the class list clean.
+            boxShadow: isSelected
+              ? '0 0 20px rgba(45,212,191,0.55), 0 0 40px rgba(45,212,191,0.2), 0 6px 20px rgba(0,0,0,0.7)'
+              : undefined,
           }}
           disabled={!isFree}
           onClick={() => isFree && onClick(tile.id)}
-          aria-label={`Tile ${symbol} at layer ${tile.z}`}
+          aria-label={`Tile ${symbol} layer ${tile.z}`}
           className={[
-            // Base shape
             'rounded-lg border select-none',
             'flex items-center justify-center',
-            'transition-colors duration-150',
-
-            // 3-D face — light top surface with a darker right/bottom bevel
+            'transition-all duration-150',
             'bg-gradient-to-br',
 
-            // Dark mode / light mode surface colours
+            // ── Surface ──────────────────────────────────────────────────────
             isSelected
-              ? 'from-amber-100 to-amber-200 border-amber-400 dark:from-amber-800 dark:to-amber-700 dark:border-amber-500'
-              : 'from-slate-50 to-slate-100 border-slate-300 dark:from-slate-700 dark:to-slate-800 dark:border-slate-600',
+              ? [
+                  'from-teal-500 to-emerald-400',
+                  'border-teal-300',
+                ].join(' ')
+              : [
+                  'from-slate-800 to-slate-900',
+                  'border-slate-700',
+                  shadowClass(tile.z, false),
+                ].join(' '),
 
-            // Depth shadow scales with z
-            shadowClass(tile.z),
+            // ── Hover (free tiles only) ───────────────────────────────────
+            isFree && !isSelected
+              ? 'cursor-pointer hover:from-slate-700 hover:to-slate-800 hover:border-teal-500/50'
+              : '',
 
-            // Free / locked cursor
-            isFree
-              ? 'cursor-pointer hover:from-white hover:to-slate-50 dark:hover:from-slate-600 dark:hover:to-slate-700 hover:border-slate-400'
-              : 'cursor-not-allowed opacity-80',
-
-            // Selected ring
-            isSelected ? 'ring-2 ring-amber-400 dark:ring-amber-500' : '',
+            // ── Locked ───────────────────────────────────────────────────
+            !isFree ? 'cursor-not-allowed opacity-50' : '',
           ].join(' ')}
         >
-          {/* Tile symbol */}
-          <span className={`text-xl leading-none font-light ${color}`}>
+          {/* Symbol — white on selected (dark glyph on light fill), coloured otherwise */}
+          <span
+            className={[
+              'text-xl leading-none font-medium',
+              isSelected ? 'text-slate-900' : color,
+            ].join(' ')}
+          >
             {symbol}
           </span>
 
-          {/* Bottom-right bevel to sell the 3-D illusion */}
+          {/* 3-D bevel — bottom-right darker edge */}
           <span
             aria-hidden
             className={[
               'absolute bottom-0 right-0 w-full h-full rounded-lg pointer-events-none',
               'border-b-4 border-r-4',
               isSelected
-                ? 'border-amber-300/50 dark:border-amber-600/50'
-                : 'border-slate-300/60 dark:border-slate-900/60',
+                ? 'border-teal-700/50'
+                : 'border-slate-950/80',
+            ].join(' ')}
+          />
+
+          {/* Top-left highlight streak — simulates a light source from top-left */}
+          <span
+            aria-hidden
+            className={[
+              'absolute top-0 left-0 w-full h-full rounded-lg pointer-events-none',
+              'border-t border-l',
+              isSelected
+                ? 'border-teal-300/40'
+                : 'border-slate-600/50',
             ].join(' ')}
           />
         </motion.button>

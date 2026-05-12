@@ -15,7 +15,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} h-full`}>
+    // class="dark" forces class-based dark variants — app is dark-only
+    <html lang="en" className={`${geist.variable} h-full dark`}>
       <body className="min-h-full flex flex-col antialiased">{children}</body>
     </html>
   );

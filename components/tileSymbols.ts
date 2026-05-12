@@ -1,59 +1,70 @@
 /**
- * 36 abstract symbols mapped to tile type indices.
- *
- * Grouped conceptually but rendered as pure glyphs — no dragons, no kanji.
- * We use geometric shapes, arrows, and minimal Unicode to keep the Zen aesthetic.
+ * 36 abstract geometric glyphs — heavy, angular, vibrant.
+ * Grouped by visual weight so adjacent tile types read as distinct.
  */
 export const TILE_SYMBOLS: string[] = [
-  // Circles (0-8)
-  '◎', '○', '●', '◉', '⊙', '◌', '◍', '◎', '⊚',
-  // Lines / grids (9-17)
-  '▪', '▫', '▬', '▭', '▮', '▯', '▰', '▱', '▲',
-  // Arrows / flow (18-26)
-  '→', '←', '↑', '↓', '↗', '↙', '↔', '↕', '⇌',
-  // Minimal nature (27-35)
-  '◇', '◆', '△', '▽', '◁', '▷', '✦', '✧', '⬡',
+  // Solid geometric (heavy presence)
+  '▲', '▼', '◆', '●', '■', '▶', '◀', '▸', '◂',
+  // Stars & sparks (high-energy)
+  '✦', '✧', '❖', '✴', '❋', '✺', '✹', '✸', '✷',
+  // Abstract / faceted
+  '◈', '◉', '⬡', '⬟', '◮', '⬠', '◭', '⬣', '⟁',
+  // Rings & halos (open, airy)
+  '◎', '⊙', '⊛', '○', '◌', '⊚', '◍', '⊘', '⊗',
 ];
 
 /**
- * Pastel hue per tile type — cycles through 6 palette groups
- * so nearby types get distinct-enough colours without being garish.
+ * Vibrant palette — maps 1-to-1 with tile types (0-35).
+ * Pulls from teal, rose, yellow, fuchsia, cyan, violet, emerald,
+ * orange, purple, lime, pink, sky — the full neon spectrum.
  */
 export const TILE_COLORS: string[] = [
-  'text-rose-400',      // 0
-  'text-orange-400',    // 1
-  'text-amber-400',     // 2
-  'text-lime-500',      // 3
-  'text-emerald-400',   // 4
-  'text-teal-400',      // 5
-  'text-cyan-400',      // 6
-  'text-sky-400',       // 7
-  'text-indigo-400',    // 8
-  'text-violet-400',    // 9
-  'text-purple-400',    // 10
-  'text-pink-400',      // 11
-  'text-rose-300',      // 12
-  'text-orange-300',    // 13
-  'text-amber-300',     // 14
-  'text-lime-400',      // 15
-  'text-emerald-300',   // 16
-  'text-teal-300',      // 17
-  'text-cyan-300',      // 18
-  'text-sky-300',       // 19
-  'text-indigo-300',    // 20
-  'text-violet-300',    // 21
-  'text-purple-300',    // 22
-  'text-pink-300',      // 23
-  'text-rose-500',      // 24
-  'text-orange-500',    // 25
-  'text-amber-500',     // 26
-  'text-lime-600',      // 27
-  'text-emerald-500',   // 28
-  'text-teal-500',      // 29
-  'text-cyan-500',      // 30
-  'text-sky-500',       // 31
-  'text-indigo-500',    // 32
-  'text-violet-500',    // 33
-  'text-purple-500',    // 34
-  'text-pink-500',      // 35
+  // Teal / Turquoise (0-2)
+  'text-teal-400',
+  'text-teal-300',
+  'text-teal-500',
+  // Rose / Coral (3-5)
+  'text-rose-400',
+  'text-rose-300',
+  'text-rose-500',
+  // Yellow / Lemon (6-8)
+  'text-yellow-300',
+  'text-yellow-400',
+  'text-yellow-200',
+  // Fuchsia / Magenta (9-11)
+  'text-fuchsia-400',
+  'text-fuchsia-500',
+  'text-fuchsia-300',
+  // Cyan / Sky (12-14)
+  'text-cyan-400',
+  'text-sky-400',
+  'text-cyan-300',
+  // Violet / Indigo (15-17)
+  'text-violet-400',
+  'text-indigo-400',
+  'text-violet-300',
+  // Emerald / Green (18-20)
+  'text-emerald-400',
+  'text-emerald-300',
+  'text-green-400',
+  // Orange / Amber (21-23)
+  'text-orange-400',
+  'text-orange-300',
+  'text-amber-400',
+  // Purple (24-26)
+  'text-purple-400',
+  'text-purple-300',
+  'text-purple-500',
+  // Lime (27-29)
+  'text-lime-400',
+  'text-lime-300',
+  'text-lime-500',
+  // Pink (30-32)
+  'text-pink-400',
+  'text-pink-300',
+  'text-pink-500',
+  // Accent wrap-around (33-35)
+  'text-cyan-500',
+  'text-sky-300',
+  'text-rose-400',
 ];

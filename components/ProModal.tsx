@@ -58,90 +58,94 @@ export default function ProModal({ isOpen, onClose }: ProModalProps) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-lg">
-      {/* Gradient header */}
+      {/* Header — dark glass with teal tint */}
       <div className="
         relative px-6 pt-8 pb-6
-        bg-gradient-to-br from-amber-50 to-orange-50
-        dark:from-slate-800 dark:to-slate-900
-        border-b border-amber-100 dark:border-slate-700
+        bg-gradient-to-br from-slate-900 to-slate-950
+        border-b border-slate-800
       ">
+        {/* Subtle teal glow behind header */}
+        <div aria-hidden className="
+          absolute inset-0 pointer-events-none
+          bg-gradient-to-br from-teal-500/5 to-transparent rounded-t-2xl
+        " />
+
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600
-                     dark:hover:text-slate-200 transition-colors text-lg leading-none"
+          className="absolute top-4 right-4 text-slate-500 hover:text-slate-300
+                     transition-colors text-lg leading-none"
           aria-label="Close"
         >
           ✕
         </button>
 
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-amber-500 text-xl">✦</span>
-          <span className="text-xs font-semibold uppercase tracking-widest text-amber-500">
+        <div className="flex items-center gap-2 mb-1 relative">
+          <span className="text-teal-400 text-xl">✦</span>
+          <span className="text-xs font-semibold uppercase tracking-widest text-teal-400">
             Flow Pro
           </span>
         </div>
-        <h2 className="text-2xl font-semibold text-slate-800 dark:text-slate-100 tracking-tight">
+        <h2 className="text-2xl font-semibold text-slate-100 tracking-tight relative">
           Enter deeper flow.
         </h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-1 text-sm text-slate-400 relative">
           Unlock the full Mahjong Flow experience.
         </p>
 
         {/* Price */}
-        <div className="mt-4 flex items-baseline gap-1.5">
-          <span className="text-3xl font-semibold text-slate-800 dark:text-slate-100">
-            $4
-          </span>
-          <span className="text-slate-400 text-sm">/ month</span>
-          <span className="ml-2 text-[11px] bg-amber-100 dark:bg-amber-900/40
-                           text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">
+        <div className="mt-4 flex items-baseline gap-1.5 relative">
+          <span className="text-3xl font-semibold text-slate-100">$4</span>
+          <span className="text-slate-500 text-sm">/ month</span>
+          <span className="ml-2 text-[11px] bg-teal-500/10 text-teal-300
+                           px-2 py-0.5 rounded-full font-medium border border-teal-500/20">
             7-day free trial
           </span>
         </div>
       </div>
 
       {/* Body */}
-      <div className="px-6 py-5 space-y-5">
+      <div className="px-6 py-5 space-y-5 bg-slate-950">
         {/* Benefits */}
         <ul className="space-y-3">
-          {BENEFITS.map((b) => (
-            <li key={b.title} className="flex items-start gap-3">
-              <span className="mt-0.5 text-lg text-amber-400 shrink-0">{b.icon}</span>
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                  {b.title}
-                </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                  {b.desc}
-                </p>
-              </div>
-            </li>
-          ))}
+          {BENEFITS.map((b, i) => {
+            // Cycle accent colors: teal, rose, yellow, fuchsia
+            const iconColors = ['text-teal-400', 'text-rose-400', 'text-yellow-300', 'text-fuchsia-400'];
+            return (
+              <li key={b.title} className="flex items-start gap-3">
+                <span className={`mt-0.5 text-lg shrink-0 ${iconColors[i % iconColors.length]}`}>
+                  {b.icon}
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-slate-200">{b.title}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{b.desc}</p>
+                </div>
+              </li>
+            );
+          })}
         </ul>
 
-        {/* Focus Stats preview (locked / teaser) */}
-        <div className="rounded-xl border border-slate-100 dark:border-slate-800 p-4 relative">
+        {/* Focus Stats preview (locked teaser) */}
+        <div className="rounded-xl border border-slate-800 p-4 relative bg-slate-900/60">
           <FocusStats locked />
-          {/* "Upgrade to unlock" overlay */}
           <div className="absolute inset-0 flex items-center justify-center rounded-xl">
-            <span className="text-xs font-medium text-amber-500 bg-white/90 dark:bg-slate-900/90
-                             px-3 py-1.5 rounded-full border border-amber-200 dark:border-amber-800 shadow">
+            <span className="text-xs font-medium text-teal-300
+                             bg-slate-950/90 px-3 py-1.5 rounded-full
+                             border border-teal-500/30">
               ✦ Unlock with Pro
             </span>
           </div>
         </div>
 
-        {/* CTA */}
+        {/* CTA — turquoise neon glow */}
         <button
           onClick={handleCheckout}
           disabled={loading}
+          style={{ boxShadow: '0 0 15px rgba(45,212,191,0.4), 0 0 30px rgba(45,212,191,0.15)' }}
           className="
-            w-full py-3 rounded-xl font-medium text-sm
-            bg-amber-400 hover:bg-amber-500 active:bg-amber-600
-            dark:bg-amber-500 dark:hover:bg-amber-400
-            text-white
-            shadow-lg shadow-amber-400/30 dark:shadow-amber-500/20
+            w-full py-3 rounded-xl font-semibold text-sm
+            bg-teal-500 hover:bg-teal-400 active:bg-teal-600
+            text-slate-950
             transition-all duration-150 active:scale-[0.98]
             disabled:opacity-60 disabled:cursor-wait
             flex items-center justify-center gap-2
@@ -157,7 +161,7 @@ export default function ProModal({ isOpen, onClose }: ProModalProps) {
           )}
         </button>
 
-        <p className="text-center text-[11px] text-slate-400 dark:text-slate-500">
+        <p className="text-center text-[11px] text-slate-600">
           Cancel anytime. No lock-in.
         </p>
       </div>

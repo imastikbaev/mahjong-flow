@@ -17,11 +17,6 @@ export default function TopBar({ onProClick }: TopBarProps) {
   const idleCount = tiles.filter((t) => t.state === 'idle' || t.state === 'selected').length;
   const pairsLeft = Math.floor(idleCount / 2);
 
-  // ---------------------------------------------------------------------------
-  // Drive the store timer from a single interval owned by the TopBar.
-  // Using the store means WinModal and other components can read elapsedSeconds
-  // directly without prop-drilling.
-  // ---------------------------------------------------------------------------
   const boardSig    = tiles.reduce((acc, t) => acc + t.id, 0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -31,10 +26,7 @@ export default function TopBar({ onProClick }: TopBarProps) {
       return;
     }
     intervalRef.current = setInterval(tickSecond, 1000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  // boardSig ensures the interval restarts when the board resets
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isComplete, boardSig, tickSecond]);
 
@@ -45,22 +37,21 @@ export default function TopBar({ onProClick }: TopBarProps) {
     <header className="
       w-full flex items-center justify-between
       px-6 py-3
-      bg-white/70 dark:bg-slate-900/70
-      backdrop-blur-md
-      border-b border-slate-200 dark:border-slate-700
+      bg-slate-950/80 backdrop-blur-xl
+      border-b border-slate-800/80
       sticky top-0 z-50
     ">
       {/* Brand */}
-      <div className="flex items-baseline gap-2">
-        <span className="text-lg font-semibold tracking-tight text-slate-800 dark:text-slate-100">
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-lg font-semibold tracking-tight text-slate-100">
           Mahjong
         </span>
-        <span className="text-lg font-light text-amber-500">Flow</span>
+        <span className="text-lg font-light text-teal-400">Flow</span>
       </div>
 
       {/* Stats */}
       <div className="flex items-center gap-8">
-        <Stat label="Time" value={`${mm}:${ss}`} />
+        <Stat label="Time"  value={`${mm}:${ss}`} />
         <Stat
           label="Pairs"
           value={isComplete ? '✦ Done' : String(pairsLeft)}
@@ -68,31 +59,30 @@ export default function TopBar({ onProClick }: TopBarProps) {
         />
       </div>
 
-      {/* Right actions */}
+      {/* Actions */}
       <div className="flex items-center gap-2">
-        {/* Pro upgrade */}
+        {/* Pro — turquoise neon glow */}
         <button
           onClick={onProClick}
+          style={{ boxShadow: '0 0 15px rgba(45,212,191,0.4)' }}
           className="
             px-3 py-1.5 rounded-full text-xs font-semibold
-            bg-amber-400/10 hover:bg-amber-400/20
-            dark:bg-amber-500/10 dark:hover:bg-amber-500/20
-            text-amber-600 dark:text-amber-400
-            border border-amber-300/50 dark:border-amber-600/40
+            bg-teal-500/10 hover:bg-teal-500/20
+            text-teal-300 border border-teal-500/40 hover:border-teal-400/70
             active:scale-95 transition-all duration-150
           "
         >
           ✦ Pro
         </button>
 
-        {/* Shuffle / new game */}
+        {/* Shuffle */}
         <button
           onClick={() => initBoard()}
           className="
             px-4 py-1.5 rounded-full text-sm font-medium
-            border border-slate-300 dark:border-slate-600
-            text-slate-600 dark:text-slate-300
-            hover:bg-slate-100 dark:hover:bg-slate-800
+            border border-slate-700 hover:border-slate-600
+            text-slate-400 hover:text-slate-200
+            hover:bg-slate-800/60
             active:scale-95 transition-all duration-150
           "
         >
@@ -116,12 +106,12 @@ function Stat({
 }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500">
+      <span className="text-[10px] uppercase tracking-widest text-slate-600">
         {label}
       </span>
       <span
         className={`text-sm font-semibold tabular-nums ${
-          highlight ? 'text-amber-500' : 'text-slate-700 dark:text-slate-200'
+          highlight ? 'text-teal-400' : 'text-slate-200'
         }`}
       >
         {value}
