@@ -70,8 +70,8 @@ export default function TileCell({ tile, isFree, onClick }: TileCellProps) {
             filter:  ['blur(0px)', 'blur(2px)', 'blur(12px)'],
             transition: { duration: 0.38, ease: 'easeOut', times: [0, 0.28, 1] },
           }}
-          initial={{ scale: 0.88, opacity: 0, filter: 'blur(4px)' }}
-          animate={{ scale: 1, opacity: 1, filter: 'blur(0px)', transition: { duration: 0.18, ease: [0, 0, 0.2, 1] } }}
+          initial={{ scale: 0.88, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1, transition: { duration: 0.18, ease: [0, 0, 0.2, 1] } }}
           whileTap={isFree ? { scale: 0.95 } : {}}
           style={{
             position: 'absolute',
@@ -89,8 +89,8 @@ export default function TileCell({ tile, isFree, onClick }: TileCellProps) {
             // Shape
             'rounded-md border select-none',
             'flex items-center justify-center',
-            // Smooth all colour/opacity transitions — no abrupt snaps
-            'transition-all duration-300 ease-out',
+            // Only CSS-transition colours — Framer Motion owns scale/opacity/filter
+            'transition-colors duration-300 ease-out',
             // Frosted glass base — matte, not reflective
             'backdrop-blur-sm',
 
