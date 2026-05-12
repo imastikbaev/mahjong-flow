@@ -52,7 +52,7 @@ export default function ProModal({ isOpen, onClose }: ProModalProps) {
        *   window.location.href = url;
        */
       await new Promise((r) => setTimeout(r, 900));
-      setNotice('Stripe not yet wired — set NEXT_PUBLIC_STRIPE_PRICE_ID to activate.');
+      setNotice('Payments are coming soon. We'll notify you when Pro is live.');
     } finally {
       setLoading(false);
     }
