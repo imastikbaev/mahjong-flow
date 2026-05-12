@@ -311,7 +311,12 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
     const isMatch = first.type === clicked.type;
 
     if (isMatch) {
-      const snapshot = tiles.map((t) => ({ ...t }));
+      // Snapshot with both tiles forced to 'idle' — restores a clean pre-match state
+      const snapshot = tiles.map((t) =>
+        t.id === first.id || t.id === clicked.id
+          ? { ...t, state: 'idle' as TileState }
+          : { ...t },
+      );
       const nextTiles = tiles.map((t) => {
         if (t.id === first.id || t.id === clicked.id) return { ...t, state: 'matched' as TileState };
         return t;
