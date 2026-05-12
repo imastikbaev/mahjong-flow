@@ -34,12 +34,15 @@ interface MahjongState {
   elapsedSeconds: number;
   /** True once all tiles are matched. */
   isComplete: boolean;
+  /** True when the user has activated Pro (persisted in localStorage). */
+  isPro: boolean;
 
   // Actions
   initBoard: (mode?: GameMode) => void;
   selectTile: (id: number) => void;
   resetBoard: () => void;
   tickSecond: () => void;
+  activatePro: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -229,12 +232,15 @@ export function isTileFree(tile: Tile, allTiles: Tile[]): boolean {
 // Zustand store
 // ---------------------------------------------------------------------------
 
+const PRO_KEY = 'mahjong_flow_pro';
+
 export const useMahjongStore = create<MahjongState>((set, get) => ({
   tiles: [],
   selectedId: null,
   gameMode: 'daily',
   elapsedSeconds: 0,
   isComplete: false,
+  isPro: typeof window !== 'undefined' && localStorage.getItem(PRO_KEY) === '1',
 
   /**
    * Initialises the board for the given mode.
@@ -326,5 +332,10 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
   /** Restarts with the same mode (daily re-uses date seed, practice gets a new random seed). */
   resetBoard() {
     get().initBoard(get().gameMode);
+  },
+
+  activatePro() {
+    if (typeof window !== 'undefined') localStorage.setItem(PRO_KEY, '1');
+    set({ isPro: true });
   },
 }));

@@ -13,6 +13,7 @@ export default function TopBar({ onProClick }: TopBarProps) {
   const isComplete     = useMahjongStore((s) => s.isComplete);
   const elapsedSeconds = useMahjongStore((s) => s.elapsedSeconds);
   const tickSecond     = useMahjongStore((s) => s.tickSecond);
+  const isPro          = useMahjongStore((s) => s.isPro);
 
   const idleCount = tiles.filter((t) => t.state === 'idle' || t.state === 'selected').length;
   const pairsLeft = Math.floor(idleCount / 2);
@@ -56,19 +57,18 @@ export default function TopBar({ onProClick }: TopBarProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-2">
-        {/* Pro — ghost button, no glow */}
+        {/* Pro button — active state when isPro */}
         <button
           onClick={onProClick}
-          className="
-            px-3 py-1.5 rounded-md text-xs font-normal tracking-tight
-            border border-white/[0.1] hover:border-white/[0.2]
-            text-neutral-400 hover:text-neutral-200
-            hover:bg-white/[0.04]
-            transition-all duration-200 ease-out
-            active:scale-95
-          "
+          className={[
+            'px-3 py-1.5 rounded-md text-xs font-normal tracking-tight',
+            'transition-all duration-200 ease-out active:scale-95',
+            isPro
+              ? 'border border-white/[0.15] text-neutral-200 bg-white/[0.06]'
+              : 'border border-white/[0.1] hover:border-white/[0.2] text-neutral-400 hover:text-neutral-200 hover:bg-white/[0.04]',
+          ].join(' ')}
         >
-          Pro
+          {isPro ? 'Pro ✦' : 'Pro'}
         </button>
 
         {/* Shuffle — text-only */}
