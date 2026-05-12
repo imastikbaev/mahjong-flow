@@ -1,65 +1,81 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useMahjongStore } from '@/store/mahjongStore';
+
+import TopBar       from '@/components/TopBar';
+import MahjongBoard from '@/components/MahjongBoard';
+import ProModal     from '@/components/ProModal';
+import WinModal     from '@/components/WinModal';
+import Leaderboard  from '@/components/Leaderboard';
 
 export default function Home() {
+  const isComplete     = useMahjongStore((s) => s.isComplete);
+  const elapsedSeconds = useMahjongStore((s) => s.elapsedSeconds);
+
+  const [proOpen, setProOpen]         = useState(false);
+  const [winOpen, setWinOpen]         = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  // Auto-show the win modal the moment the board is cleared.
+  // A short delay lets the last tile's exit animation finish first.
+  useEffect(() => {
+    if (!isComplete) return;
+    const timer = setTimeout(() => setWinOpen(true), 420);
+    return () => clearTimeout(timer);
+  }, [isComplete]);
+
+  // Reset win modal when a new game starts
+  useEffect(() => {
+    if (!isComplete) setWinOpen(false);
+  }, [isComplete]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="flex flex-col h-full min-h-screen relative z-10">
+      <TopBar onProClick={() => setProOpen(true)} />
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Board — takes all available space */}
+        <MahjongBoard />
+
+        {/* Leaderboard sidebar — slides in alongside the board */}
+        {showLeaderboard && (
+          <aside className="hidden lg:flex flex-col gap-4 p-4 w-80 shrink-0 overflow-y-auto">
+            <Leaderboard userCity="Oskemen" />
+          </aside>
+        )}
+      </div>
+
+      {/* Toggle leaderboard button (bottom-right FAB) */}
+      <button
+        onClick={() => setShowLeaderboard((v) => !v)}
+        className="
+          fixed bottom-5 right-5 z-40
+          px-4 py-2 rounded-full
+          bg-white/90 dark:bg-slate-800/90
+          border border-slate-200 dark:border-slate-700
+          shadow-lg backdrop-blur-sm
+          text-xs font-medium text-slate-600 dark:text-slate-300
+          hover:bg-white dark:hover:bg-slate-800
+          active:scale-95 transition-all duration-150
+        "
+        aria-label={showLeaderboard ? 'Hide leaderboard' : 'Show leaderboard'}
+      >
+        {showLeaderboard ? '✕ Hide Scores' : '◎ Leaderboard'}
+      </button>
+
+      {/* Modals */}
+      <ProModal isOpen={proOpen} onClose={() => setProOpen(false)} />
+
+      <WinModal
+        isOpen={winOpen}
+        onClose={() => setWinOpen(false)}
+        elapsedSeconds={elapsedSeconds}
+        onViewLeaderboard={() => {
+          setWinOpen(false);
+          setShowLeaderboard(true);
+        }}
+      />
     </div>
   );
 }

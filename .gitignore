@@ -32,6 +32,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.local.example
+
+# Python virtualenv & cache
+ai-coach/.venv/
+ai-coach/__pycache__/
+ai-coach/*.pyc
+ai-coach/*.pyo
 
 # vercel
 .vercel
