@@ -5,10 +5,12 @@ import { AnimatePresence } from 'framer-motion';
 import { useMahjongStore, isTileFree } from '@/store/mahjongStore';
 import TileCell, { TILE_W, TILE_H, STEP_X, STEP_Y, LAYER_OFFSET } from './TileCell';
 
+
 export default function MahjongBoard() {
   const tiles      = useMahjongStore((s) => s.tiles);
   const selectTile = useMahjongStore((s) => s.selectTile);
   const initBoard  = useMahjongStore((s) => s.initBoard);
+  const isPro      = useMahjongStore((s) => s.isPro);
 
   useEffect(() => { initBoard(); }, [initBoard]);
 
@@ -61,6 +63,7 @@ export default function MahjongBoard() {
               tile={tile}
               isFree={freeIds.has(tile.id)}
               onClick={selectTile}
+              isPro={isPro}
             />
           ))}
         </AnimatePresence>

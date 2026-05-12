@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useLeaderboard, LeaderboardScope } from '@/lib/hooks/useLeaderboard';
-import { DAILY_DATE } from '@/store/mahjongStore';
+import { DAILY_DATE, useMahjongStore } from '@/store/mahjongStore';
 
 interface LeaderboardProps {
   userCity?: string | null;
@@ -10,6 +10,7 @@ interface LeaderboardProps {
 
 export default function Leaderboard({ userCity }: LeaderboardProps) {
   const [scope, setScope] = useState<LeaderboardScope>('global');
+  const isPro = useMahjongStore((s) => s.isPro);
 
   const { rows, loading, error, refetch } = useLeaderboard({
     date: DAILY_DATE,
@@ -17,7 +18,8 @@ export default function Leaderboard({ userCity }: LeaderboardProps) {
     city: userCity,
   });
 
-  const canShowLocal = !!userCity;
+  // Pro users always see the local tab; free users need a city set
+  const canShowLocal = isPro || !!userCity;
 
   return (
     <aside className="
@@ -50,6 +52,7 @@ export default function Leaderboard({ userCity }: LeaderboardProps) {
             active={scope === 'local'}
             disabled={!canShowLocal}
             onClick={() => canShowLocal && setScope('local')}
+            proLocked={!isPro && !userCity}
           />
         </div>
       </div>
@@ -183,17 +186,20 @@ function ScopeButton({
   label,
   active,
   disabled = false,
+  proLocked = false,
   onClick,
 }: {
   label: string;
   active: boolean;
   disabled?: boolean;
+  proLocked?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
+      title={proLocked ? 'Geo Leaderboard — Pro feature' : undefined}
       className={[
         'px-3 py-1.5 text-[11px] font-normal tracking-tight transition-colors duration-150',
         active
@@ -202,7 +208,7 @@ function ScopeButton({
         disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer',
       ].join(' ')}
     >
-      {label}
+      {proLocked ? `${label} ✦` : label}
     </button>
   );
 }

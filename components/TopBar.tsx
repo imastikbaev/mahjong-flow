@@ -14,6 +14,8 @@ export default function TopBar({ onProClick }: TopBarProps) {
   const elapsedSeconds = useMahjongStore((s) => s.elapsedSeconds);
   const tickSecond     = useMahjongStore((s) => s.tickSecond);
   const isPro          = useMahjongStore((s) => s.isPro);
+  const history        = useMahjongStore((s) => s.history);
+  const undoMove       = useMahjongStore((s) => s.undoMove);
 
   const idleCount = tiles.filter((t) => t.state === 'idle' || t.state === 'selected').length;
   const pairsLeft = Math.floor(idleCount / 2);
@@ -70,6 +72,25 @@ export default function TopBar({ onProClick }: TopBarProps) {
         >
           {isPro ? 'Pro ✦' : 'Pro'}
         </button>
+
+        {/* Undo — Pro only */}
+        {isPro && (
+          <button
+            onClick={undoMove}
+            disabled={history.length === 0}
+            className="
+              px-3 py-1.5 rounded-md text-xs font-normal tracking-tight
+              text-neutral-600 hover:text-neutral-300
+              hover:bg-white/[0.03]
+              transition-all duration-200 ease-out
+              active:scale-95
+              disabled:opacity-20 disabled:cursor-not-allowed
+            "
+            title="Undo last match"
+          >
+            ↺
+          </button>
+        )}
 
         {/* Shuffle — text-only */}
         <button

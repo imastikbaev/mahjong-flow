@@ -44,9 +44,10 @@ interface TileCellProps {
   tile: Tile;
   isFree: boolean;
   onClick: (id: number) => void;
+  isPro?: boolean;
 }
 
-export default function TileCell({ tile, isFree, onClick }: TileCellProps) {
+export default function TileCell({ tile, isFree, onClick, isPro = false }: TileCellProps) {
   const symbol = TILE_SYMBOLS[tile.type % TILE_SYMBOLS.length];
 
   // ── Position — UNCHANGED logic ───────────────────────────────────────────
@@ -96,12 +97,16 @@ export default function TileCell({ tile, isFree, onClick }: TileCellProps) {
 
             // ── Surface ────────────────────────────────────────────────────
             isSelected
-              ? 'bg-white/[0.10] border-white/[0.40] text-white'
+              ? 'bg-white/[0.12] border-white/[0.45] text-white'
+              : isPro
+              ? 'bg-white/[0.05] border-white/[0.12] text-neutral-300'
               : 'bg-white/[0.03] border-white/[0.08] text-neutral-400',
 
             // ── Hover (free & not selected) ────────────────────────────────
             isFree && !isSelected
-              ? 'cursor-pointer hover:bg-white/[0.06] hover:border-white/[0.15] hover:text-neutral-200'
+              ? isPro
+                ? 'cursor-pointer hover:bg-white/[0.09] hover:border-white/[0.22] hover:text-neutral-100'
+                : 'cursor-pointer hover:bg-white/[0.06] hover:border-white/[0.15] hover:text-neutral-200'
               : '',
 
             // ── Locked ─────────────────────────────────────────────────────

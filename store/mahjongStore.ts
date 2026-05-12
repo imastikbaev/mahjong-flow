@@ -30,12 +30,11 @@ interface MahjongState {
   tiles: Tile[];
   selectedId: number | null;
   gameMode: GameMode;
-  /** Wall-clock seconds elapsed since the board was initialised. */
   elapsedSeconds: number;
-  /** True once all tiles are matched. */
   isComplete: boolean;
-  /** True when the user has activated Pro (persisted in localStorage). */
   isPro: boolean;
+  /** Undo stack — each entry is a snapshot of tiles before a match. Pro only. */
+  history: Tile[][];
 
   // Actions
   initBoard: (mode?: GameMode) => void;
@@ -43,6 +42,7 @@ interface MahjongState {
   resetBoard: () => void;
   tickSecond: () => void;
   activatePro: () => void;
+  undoMove: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -241,6 +241,7 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
   elapsedSeconds: 0,
   isComplete: false,
   isPro: typeof window !== 'undefined' && localStorage.getItem(PRO_KEY) === '1',
+  history: [],
 
   /**
    * Initialises the board for the given mode.
@@ -310,12 +311,18 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
     const isMatch = first.type === clicked.type;
 
     if (isMatch) {
+      const snapshot = tiles.map((t) => ({ ...t }));
       const nextTiles = tiles.map((t) => {
         if (t.id === first.id || t.id === clicked.id) return { ...t, state: 'matched' as TileState };
         return t;
       });
       const allMatched = nextTiles.every((t) => t.state === 'matched');
-      set({ selectedId: null, tiles: nextTiles, isComplete: allMatched });
+      set((s) => ({
+        selectedId: null,
+        tiles: nextTiles,
+        isComplete: allMatched,
+        history: [...s.history.slice(-19), snapshot], // keep last 20 moves
+      }));
     } else {
       // Replace selection: deselect previous, select new
       set({
@@ -337,5 +344,17 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
   activatePro() {
     if (typeof window !== 'undefined') localStorage.setItem(PRO_KEY, '1');
     set({ isPro: true });
+  },
+
+  undoMove() {
+    const { history, isPro } = get();
+    if (!isPro || history.length === 0) return;
+    const prev = history[history.length - 1];
+    set((s) => ({
+      tiles: prev,
+      selectedId: null,
+      isComplete: false,
+      history: s.history.slice(0, -1),
+    }));
   },
 }));
