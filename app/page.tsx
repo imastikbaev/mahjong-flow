@@ -52,16 +52,15 @@ export default function Home() {
         className="
           fixed bottom-5 right-5 z-40
           px-4 py-2 rounded-full
-          bg-white/90 dark:bg-slate-800/90
-          border border-slate-200 dark:border-slate-700
-          shadow-lg backdrop-blur-sm
-          text-xs font-medium text-slate-600 dark:text-slate-300
-          hover:bg-white dark:hover:bg-slate-800
-          active:scale-95 transition-all duration-150
+          bg-[#0e0e0e]/90 backdrop-blur-sm
+          border border-white/[0.1] hover:border-white/[0.18]
+          text-xs font-normal tracking-tight
+          text-neutral-500 hover:text-neutral-200
+          transition-all duration-200 active:scale-95
         "
         aria-label={showLeaderboard ? 'Hide leaderboard' : 'Show leaderboard'}
       >
-        {showLeaderboard ? '✕ Hide Scores' : '◎ Leaderboard'}
+        {showLeaderboard ? '✕ hide scores' : '◎ leaderboard'}
       </button>
 
       {/* Modals */}

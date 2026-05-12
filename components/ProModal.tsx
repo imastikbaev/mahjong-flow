@@ -35,8 +35,9 @@ const BENEFITS = [
 
 export default function ProModal({ isOpen, onClose }: ProModalProps) {
   const [loading, setLoading] = useState(false);
-  const isPro      = useMahjongStore((s) => s.isPro);
-  const activatePro = useMahjongStore((s) => s.activatePro);
+  const isPro        = useMahjongStore((s) => s.isPro);
+  const activatePro  = useMahjongStore((s) => s.activatePro);
+  const deactivatePro = useMahjongStore((s) => s.deactivatePro);
 
   async function handleCheckout() {
     setLoading(true);
@@ -109,6 +110,15 @@ export default function ProModal({ isOpen, onClose }: ProModalProps) {
               "
             >
               Continue playing
+            </button>
+
+            {/* Dev-only reset — intentionally unobtrusive */}
+            <button
+              onClick={deactivatePro}
+              className="mx-auto block text-[10px] text-neutral-800 hover:text-neutral-600
+                         transition-colors duration-150 tracking-tight"
+            >
+              reset demo
             </button>
           </div>
         </>

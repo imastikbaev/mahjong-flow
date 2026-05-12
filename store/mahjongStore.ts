@@ -42,6 +42,7 @@ interface MahjongState {
   resetBoard: () => void;
   tickSecond: () => void;
   activatePro: () => void;
+  deactivatePro: () => void;
   undoMove: () => void;
 }
 
@@ -349,6 +350,11 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
   activatePro() {
     if (typeof window !== 'undefined') localStorage.setItem(PRO_KEY, '1');
     set({ isPro: true });
+  },
+
+  deactivatePro() {
+    if (typeof window !== 'undefined') localStorage.removeItem(PRO_KEY);
+    set({ isPro: false, history: [] });
   },
 
   undoMove() {
