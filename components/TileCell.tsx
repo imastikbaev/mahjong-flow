@@ -63,10 +63,16 @@ export default function TileCell({ tile, isFree, onClick }: TileCellProps) {
         <motion.button
           key={tile.id}
           // Match exit to the lighter, more refined feel
-          exit={{ scale: 0.5, opacity: 0, transition: { duration: 0.2, ease: [0.4, 0, 1, 1] } }}
-          initial={{ scale: 0.88, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1, transition: { duration: 0.18, ease: [0, 0, 0.2, 1] } }}
-          whileTap={isFree ? { scale: 0.94 } : {}}
+          exit={{
+            scale:   [1, 1.05, 0.6],
+            opacity: [1, 1,    0],
+            y:       [0, -15,  -28],
+            filter:  ['blur(0px)', 'blur(2px)', 'blur(12px)'],
+            transition: { duration: 0.38, ease: 'easeOut', times: [0, 0.28, 1] },
+          }}
+          initial={{ scale: 0.88, opacity: 0, filter: 'blur(4px)' }}
+          animate={{ scale: 1, opacity: 1, filter: 'blur(0px)', transition: { duration: 0.18, ease: [0, 0, 0.2, 1] } }}
+          whileTap={isFree ? { scale: 0.95 } : {}}
           style={{
             position: 'absolute',
             left,
