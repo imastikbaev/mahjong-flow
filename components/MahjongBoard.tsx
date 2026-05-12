@@ -11,6 +11,7 @@ export default function MahjongBoard() {
   const selectTile = useMahjongStore((s) => s.selectTile);
   const initBoard  = useMahjongStore((s) => s.initBoard);
   const isPro      = useMahjongStore((s) => s.isPro);
+  const hintedId   = useMahjongStore((s) => s.hintedId);
 
   useEffect(() => { initBoard(); }, [initBoard]);
 
@@ -64,6 +65,7 @@ export default function MahjongBoard() {
               isFree={freeIds.has(tile.id)}
               onClick={selectTile}
               isPro={isPro}
+              isHinted={tile.id === hintedId}
             />
           ))}
         </AnimatePresence>

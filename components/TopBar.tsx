@@ -16,6 +16,10 @@ export default function TopBar({ onProClick }: TopBarProps) {
   const isPro          = useMahjongStore((s) => s.isPro);
   const history        = useMahjongStore((s) => s.history);
   const undoMove       = useMahjongStore((s) => s.undoMove);
+  const difficulty     = useMahjongStore((s) => s.difficulty);
+  const setDifficulty  = useMahjongStore((s) => s.setDifficulty);
+  const getHint        = useMahjongStore((s) => s.getHint);
+  const hintedId       = useMahjongStore((s) => s.hintedId);
 
   const idleCount = tiles.filter((t) => t.state === 'idle' || t.state === 'selected').length;
   const pairsLeft = Math.floor(idleCount / 2);
@@ -57,6 +61,24 @@ export default function TopBar({ onProClick }: TopBarProps) {
         />
       </div>
 
+      {/* Difficulty selector */}
+      <div className="flex items-center rounded-md border border-white/[0.07] overflow-hidden">
+        {(['easy', 'medium', 'hard'] as const).map((d) => (
+          <button
+            key={d}
+            onClick={() => setDifficulty(d)}
+            className={[
+              'px-2.5 py-1.5 text-[10px] font-normal tracking-tight transition-colors duration-150',
+              difficulty === d
+                ? 'bg-white/[0.08] text-neutral-300'
+                : 'text-neutral-700 hover:text-neutral-400',
+            ].join(' ')}
+          >
+            {d}
+          </button>
+        ))}
+      </div>
+
       {/* Actions */}
       <div className="flex items-center gap-2">
         {/* Pro button — active state when isPro */}
@@ -71,6 +93,21 @@ export default function TopBar({ onProClick }: TopBarProps) {
           ].join(' ')}
         >
           {isPro ? 'Pro ✦' : 'Pro'}
+        </button>
+
+        {/* Hint */}
+        <button
+          onClick={getHint}
+          className={[
+            'px-3 py-1.5 rounded-md text-xs font-normal tracking-tight',
+            'transition-all duration-200 ease-out active:scale-95',
+            hintedId !== null
+              ? 'text-neutral-300 bg-white/[0.05] border border-white/[0.12]'
+              : 'text-neutral-600 hover:text-neutral-300 hover:bg-white/[0.03]',
+          ].join(' ')}
+          title="Show a hint"
+        >
+          ◎
         </button>
 
         {/* Undo — Pro only */}

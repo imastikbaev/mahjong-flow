@@ -30,6 +30,12 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Hint tile pulse — used by TileCell when hintedId matches */
+@keyframes hint-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(255,255,255,0.25), 0 0  8px rgba(255,255,255,0.06); }
+  50%       { box-shadow: 0 0 0 2px rgba(255,255,255,0.60), 0 0 20px rgba(255,255,255,0.12); }
+}
+
 /* Single extremely faint ambient highlight — barely perceptible,
    just enough to prevent the bg from feeling like a void. */
 body::before {

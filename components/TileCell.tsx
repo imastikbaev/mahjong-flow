@@ -45,9 +45,10 @@ interface TileCellProps {
   isFree: boolean;
   onClick: (id: number) => void;
   isPro?: boolean;
+  isHinted?: boolean;
 }
 
-export default function TileCell({ tile, isFree, onClick, isPro = false }: TileCellProps) {
+export default function TileCell({ tile, isFree, onClick, isPro = false, isHinted = false }: TileCellProps) {
   const symbol = TILE_SYMBOLS[tile.type % TILE_SYMBOLS.length];
 
   // ── Position — UNCHANGED logic ───────────────────────────────────────────
@@ -82,6 +83,7 @@ export default function TileCell({ tile, isFree, onClick, isPro = false }: TileC
             height: TILE_H,
             zIndex,
             boxShadow: isSelected ? SELECTED_SHADOW : depthShadow(tile.z),
+            animation: isHinted ? 'hint-pulse 1.2s ease-in-out infinite' : undefined,
           }}
           disabled={!isFree}
           onClick={() => isFree && onClick(tile.id)}
