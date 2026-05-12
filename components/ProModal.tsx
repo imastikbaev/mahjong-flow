@@ -34,9 +34,11 @@ const BENEFITS = [
 
 export default function ProModal({ isOpen, onClose }: ProModalProps) {
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function handleCheckout() {
     setLoading(true);
+    setNotice(null);
     try {
       /**
        * TODO: Replace with real Stripe checkout session creation.
@@ -49,8 +51,8 @@ export default function ProModal({ isOpen, onClose }: ProModalProps) {
        *   const { url } = await res.json();
        *   window.location.href = url;
        */
-      await new Promise((r) => setTimeout(r, 900)); // simulate network
-      alert('Stripe checkout would open here — wire NEXT_PUBLIC_STRIPE_PRICE_ID to activate.');
+      await new Promise((r) => setTimeout(r, 900));
+      setNotice('Stripe not yet wired — set NEXT_PUBLIC_STRIPE_PRICE_ID to activate.');
     } finally {
       setLoading(false);
     }
@@ -115,6 +117,14 @@ export default function ProModal({ isOpen, onClose }: ProModalProps) {
             </span>
           </div>
         </div>
+
+        {/* Inline notice (replaces native alert) */}
+        {notice && (
+          <p className="text-[11px] font-light text-neutral-500 tracking-tight
+                         border border-white/[0.06] rounded-lg px-3 py-2 bg-white/[0.02]">
+            {notice}
+          </p>
+        )}
 
         {/* CTA — Vercel-style: solid white on black */}
         <button
