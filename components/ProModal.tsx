@@ -52,7 +52,7 @@ export default function ProModal({ isOpen, onClose }: ProModalProps) {
        *   window.location.href = url;
        */
       await new Promise((r) => setTimeout(r, 900));
-      setNotice('Payments are coming soon. We'll notify you when Pro is live.');
+      setNotice('Payments are coming soon. We will notify you when Pro is live.');
     } finally {
       setLoading(false);
     }
