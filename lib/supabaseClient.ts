@@ -55,27 +55,38 @@ export type Database = {
   };
 };
 
-// Kept for documentation; replace with Supabase CLI-generated types
-// (`supabase gen types typescript`) once the project is linked.
 export type TypedSupabaseClient = SupabaseClient;
 
 // ---------------------------------------------------------------------------
-// Singleton client
+// Singleton client — lazy so missing env vars don't crash the build.
+// At runtime, calls will fail gracefully if vars are absent; set them via
+// Vercel Dashboard → Project Settings → Environment Variables.
 // ---------------------------------------------------------------------------
 
-const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+let _client: SupabaseClient | null = null;
 
-if (!supabaseUrl || !supabaseAnon) {
-  throw new Error(
-    'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. ' +
-    'Copy .env.local.example → .env.local and fill in your project credentials.',
-  );
+function getClient(): SupabaseClient {
+  if (_client) return _client;
+
+  const url  = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anon) {
+    // Warn at runtime but don't crash the process — the app still renders
+    // without DB connectivity (leaderboard shows empty, score submit fails).
+    console.warn(
+      '[supabase] NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. ' +
+      'Add them in Vercel → Project Settings → Environment Variables.',
+    );
+  }
+
+  _client = createClient(url ?? '', anon ?? '');
+  return _client;
 }
 
-// We skip the Database generic here because our hand-written type doesn't
-// satisfy Supabase's internal GenericSchema constraint exactly.
-// Use `.returns<T>()` on select queries and explicit payload types on writes
-// for full type safety. Replace with `createClient<Database>` once you run
-// `supabase gen types typescript --project-id <ref> > lib/database.types.ts`.
-export const supabase = createClient(supabaseUrl, supabaseAnon);
+// Proxy so all imports keep `supabase.from(...)` syntax unchanged.
+export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    return (getClient() as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
