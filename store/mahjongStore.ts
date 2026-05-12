@@ -40,6 +40,7 @@ interface MahjongState {
   undoMove: () => void;
   setDifficulty: (d: Difficulty) => void;
   getHint: () => void;
+  reshuffleRemaining: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -130,6 +131,20 @@ export function isTileFree(tile: Tile, allTiles: Tile[]): boolean {
   const blockedLeft  = active.some((t) => t.z === tile.z && t.y === tile.y && t.x === tile.x - 2);
   const blockedRight = active.some((t) => t.z === tile.z && t.y === tile.y && t.x === tile.x + 2);
   return !blockedLeft || !blockedRight;
+}
+
+/**
+ * Returns true if at least one matching pair exists among currently free tiles.
+ * Used for deadlock detection — when false, reshuffleRemaining() should be offered.
+ */
+export function hasAvailableMoves(tiles: Tile[]): boolean {
+  const free = tiles.filter((t) => isTileFree(t, tiles));
+  const seen = new Set<number>();
+  for (const t of free) {
+    if (seen.has(t.type)) return true;
+    seen.add(t.type);
+  }
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -324,6 +339,27 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
   setDifficulty(d: Difficulty) {
     set({ difficulty: d });
     get().initBoard(get().gameMode);
+  },
+
+  reshuffleRemaining() {
+    const { tiles } = get();
+    const idleTiles = tiles.filter((t) => t.state === 'idle');
+    if (idleTiles.length === 0) return;
+
+    // Extract types and shuffle with Math.random (in-session, not seed-based)
+    const types = idleTiles.map((t) => t.type);
+    for (let i = types.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [types[i], types[j]] = [types[j], types[i]];
+    }
+
+    // Re-assign shuffled types back to the same positions
+    let idx = 0;
+    const newTiles = tiles.map((t) =>
+      t.state === 'idle' ? { ...t, type: types[idx++] } : t,
+    );
+
+    set({ tiles: newTiles, selectedId: null, hintedId: null });
   },
 
   getHint() {

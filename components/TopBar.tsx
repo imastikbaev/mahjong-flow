@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { useMahjongStore } from '@/store/mahjongStore';
+import { useEffect, useRef, useMemo } from 'react';
+import { useMahjongStore, hasAvailableMoves } from '@/store/mahjongStore';
 
 interface TopBarProps {
   onProClick: () => void;
@@ -16,10 +16,18 @@ export default function TopBar({ onProClick }: TopBarProps) {
   const isPro          = useMahjongStore((s) => s.isPro);
   const history        = useMahjongStore((s) => s.history);
   const undoMove       = useMahjongStore((s) => s.undoMove);
-  const difficulty     = useMahjongStore((s) => s.difficulty);
-  const setDifficulty  = useMahjongStore((s) => s.setDifficulty);
-  const getHint        = useMahjongStore((s) => s.getHint);
-  const hintedId       = useMahjongStore((s) => s.hintedId);
+  const difficulty          = useMahjongStore((s) => s.difficulty);
+  const setDifficulty       = useMahjongStore((s) => s.setDifficulty);
+  const getHint             = useMahjongStore((s) => s.getHint);
+  const hintedId            = useMahjongStore((s) => s.hintedId);
+  const reshuffleRemaining  = useMahjongStore((s) => s.reshuffleRemaining);
+
+  const hasIdle    = tiles.some((t) => t.state === 'idle');
+  const isDeadlock = useMemo(
+    () => hasIdle && !isComplete && !hasAvailableMoves(tiles),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tiles, isComplete],
+  );
 
   const idleCount = tiles.filter((t) => t.state === 'idle' || t.state === 'selected').length;
   const pairsLeft = Math.floor(idleCount / 2);
@@ -129,18 +137,19 @@ export default function TopBar({ onProClick }: TopBarProps) {
           </button>
         )}
 
-        {/* Shuffle — text-only */}
+        {/* Reshuffle — highlights on deadlock, starts new game otherwise */}
         <button
-          onClick={() => initBoard()}
-          className="
-            px-3 py-1.5 rounded-md text-xs font-normal tracking-tight
-            text-neutral-600 hover:text-neutral-300
-            hover:bg-white/[0.03]
-            transition-all duration-200 ease-out
-            active:scale-95
-          "
+          onClick={isDeadlock ? reshuffleRemaining : () => initBoard()}
+          title={isDeadlock ? 'No moves left — reshuffle remaining tiles' : 'New game'}
+          className={[
+            'px-3 py-1.5 rounded-md text-xs font-normal tracking-tight',
+            'transition-all duration-200 ease-out active:scale-95',
+            isDeadlock
+              ? 'border border-white/[0.2] text-neutral-200 bg-white/[0.06] animate-pulse'
+              : 'text-neutral-600 hover:text-neutral-300 hover:bg-white/[0.03]',
+          ].join(' ')}
         >
-          Shuffle
+          {isDeadlock ? '↺ stuck?' : 'shuffle'}
         </button>
       </div>
     </header>
