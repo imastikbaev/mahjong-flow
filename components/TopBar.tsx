@@ -137,10 +137,10 @@ export default function TopBar({ onProClick }: TopBarProps) {
           </button>
         )}
 
-        {/* Reshuffle — highlights on deadlock, starts new game otherwise */}
+        {/* Reshuffle — always reshuffles remaining tiles; glows on deadlock */}
         <button
-          onClick={isDeadlock ? reshuffleRemaining : () => initBoard()}
-          title={isDeadlock ? 'No moves left — reshuffle remaining tiles' : 'New game'}
+          onClick={reshuffleRemaining}
+          title={isDeadlock ? 'No moves left — reshuffling tiles' : 'Reshuffle remaining tiles'}
           className={[
             'px-3 py-1.5 rounded-md text-xs font-normal tracking-tight',
             'transition-all duration-200 ease-out active:scale-95',

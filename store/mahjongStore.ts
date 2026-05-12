@@ -342,24 +342,74 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
   },
 
   reshuffleRemaining() {
-    const { tiles } = get();
+    const { tiles, difficulty } = get();
     const idleTiles = tiles.filter((t) => t.state === 'idle');
-    if (idleTiles.length === 0) return;
+    if (idleTiles.length < 2) return;
 
-    // Extract types and shuffle with Math.random (in-session, not seed-based)
-    const types = idleTiles.map((t) => t.type);
-    for (let i = types.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [types[i], types[j]] = [types[j], types[i]];
+    // Mix Date.now with Math.random for enough entropy between rapid calls
+    const rng = createRng((Date.now() ^ (Math.random() * 0xffffffff | 0)) >>> 0);
+
+    if (difficulty === 'hard') {
+      // Hard mode — pure shuffle, no solvability guarantee
+      const types = idleTiles.map((t) => t.type);
+      for (let i = types.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [types[i], types[j]] = [types[j], types[i]];
+      }
+      let idx = 0;
+      set({
+        tiles: tiles.map((t) => (t.state === 'idle' ? { ...t, type: types[idx++] } : t)),
+        selectedId: null,
+        hintedId: null,
+      });
+      return;
     }
 
-    // Re-assign shuffled types back to the same positions
-    let idx = 0;
-    const newTiles = tiles.map((t) =>
-      t.state === 'idle' ? { ...t, type: types[idx++] } : t,
-    );
+    // Easy / Medium — solvable reshuffle using the same two-phase algorithm.
+    // isTileFree needs the full tile array (matched tiles still block positions),
+    // so we simulate on a copy of the full board.
+    let simTiles = tiles.map((t) => ({ ...t }));
+    const pairOrder: [number, number][] = [];
 
-    set({ tiles: newTiles, selectedId: null, hintedId: null });
+    while (true) {
+      const free = simTiles.filter((t) => isTileFree(t, simTiles));
+      if (free.length < 2) break;
+      const pool = [...free];
+      const a    = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+      const b    = pool[Math.floor(rng() * pool.length)];
+      pairOrder.push([a.id, b.id]);
+      simTiles = simTiles.map((t) =>
+        t.id === a.id || t.id === b.id ? { ...t, state: 'matched' as TileState } : t,
+      );
+    }
+
+    if (pairOrder.length === 0) return;
+
+    // Assign types: cycle through type range so each type appears evenly
+    const typeCount   = difficulty === 'medium' ? 18 : TILE_TYPE_COUNT;
+    const pairCount   = pairOrder.length;
+    const typesInPlay = Math.min(typeCount, pairCount);
+    const pairTypes   = Array.from({ length: pairCount }, (_, i) => i % typesInPlay);
+    for (let i = pairTypes.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [pairTypes[i], pairTypes[j]] = [pairTypes[j], pairTypes[i]];
+    }
+
+    const typeMap = new Map<number, number>();
+    pairOrder.forEach(([id1, id2], idx) => {
+      typeMap.set(id1, pairTypes[idx]);
+      typeMap.set(id2, pairTypes[idx]);
+    });
+
+    set({
+      tiles: tiles.map((t) =>
+        t.state === 'idle' && typeMap.has(t.id)
+          ? { ...t, type: typeMap.get(t.id)! }
+          : t,
+      ),
+      selectedId: null,
+      hintedId:   null,
+    });
   },
 
   getHint() {
