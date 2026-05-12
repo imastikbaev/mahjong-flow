@@ -10,23 +10,14 @@ export default function MahjongBoard() {
   const selectTile = useMahjongStore((s) => s.selectTile);
   const initBoard  = useMahjongStore((s) => s.initBoard);
 
-  // Initialise on first mount
-  useEffect(() => {
-    initBoard();
-  }, [initBoard]);
+  useEffect(() => { initBoard(); }, [initBoard]);
 
-  // Pre-compute the free set once per render (O(n²) but n ≤ 144)
   const freeIds = useMemo(() => {
     const set = new Set<number>();
-    tiles.forEach((t) => {
-      if (isTileFree(t, tiles)) set.add(t.id);
-    });
+    tiles.forEach((t) => { if (isTileFree(t, tiles)) set.add(t.id); });
     return set;
   }, [tiles]);
 
-  // ---------------------------------------------------------------------------
-  // Board canvas dimensions — derive from the max x/y/z extents of layout
-  // ---------------------------------------------------------------------------
   const { canvasW, canvasH } = useMemo(() => {
     if (tiles.length === 0) return { canvasW: 600, canvasH: 400 };
     const maxX = Math.max(...tiles.map((t) => t.x));
@@ -40,18 +31,26 @@ export default function MahjongBoard() {
 
   if (tiles.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">
+      <div className="flex-1 flex items-center justify-center text-neutral-600 text-sm font-light tracking-wide">
         Loading…
       </div>
     );
   }
 
   return (
-    <main className="flex-1 flex items-center justify-center overflow-auto p-6">
-      {/*
-       * Outer scroll container — lets small screens pan the board.
-       * The board itself is absolutely positioned so tiles can overlap freely.
-       */}
+    <main className="flex-1 flex items-center justify-center overflow-auto p-8 relative z-10">
+      {/* Ambient glow — sits behind the tile canvas, never above it */}
+      <div
+        aria-hidden
+        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+      >
+        <div
+          className="w-[600px] h-[400px] rounded-full bg-white/[0.025]"
+          style={{ filter: 'blur(120px)' }}
+        />
+      </div>
+
+      {/* Tile canvas */}
       <div
         style={{ width: canvasW, height: canvasH, position: 'relative', flexShrink: 0 }}
       >

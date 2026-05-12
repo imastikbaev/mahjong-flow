@@ -21,10 +21,7 @@ export default function TopBar({ onProClick }: TopBarProps) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (isComplete) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
-    }
+    if (isComplete) { if (intervalRef.current) clearInterval(intervalRef.current); return; }
     intervalRef.current = setInterval(tickSecond, 1000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -36,57 +33,56 @@ export default function TopBar({ onProClick }: TopBarProps) {
   return (
     <header className="
       w-full flex items-center justify-between
-      px-6 py-3
-      bg-slate-950/80 backdrop-blur-xl
-      border-b border-slate-800/80
+      px-6 py-3.5
+      bg-[#0a0a0a]/90 backdrop-blur-xl
+      border-b border-white/[0.06]
       sticky top-0 z-50
     ">
       {/* Brand */}
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-lg font-semibold tracking-tight text-slate-100">
-          Mahjong
-        </span>
-        <span className="text-lg font-light text-teal-400">Flow</span>
+      <div className="flex items-baseline gap-1">
+        <span className="text-sm font-normal tracking-tight text-neutral-200">Mahjong</span>
+        <span className="text-sm font-light tracking-tight text-neutral-500">Flow</span>
       </div>
 
-      {/* Stats */}
-      <div className="flex items-center gap-8">
-        <Stat label="Time"  value={`${mm}:${ss}`} />
+      {/* Stats — centred, minimal */}
+      <div className="flex items-center gap-10">
+        <Stat label="time"  value={`${mm}:${ss}`} />
         <Stat
-          label="Pairs"
-          value={isComplete ? '✦ Done' : String(pairsLeft)}
+          label="pairs"
+          value={isComplete ? '—' : String(pairsLeft)}
           highlight={isComplete}
         />
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-2">
-        {/* Pro — turquoise neon glow */}
+        {/* Pro — ghost button, no glow */}
         <button
           onClick={onProClick}
-          style={{ boxShadow: '0 0 15px rgba(45,212,191,0.4)' }}
           className="
-            px-3 py-1.5 rounded-full text-xs font-semibold
-            bg-teal-500/10 hover:bg-teal-500/20
-            text-teal-300 border border-teal-500/40 hover:border-teal-400/70
-            active:scale-95 transition-all duration-150
+            px-3 py-1.5 rounded-md text-xs font-normal tracking-tight
+            border border-white/[0.1] hover:border-white/[0.2]
+            text-neutral-400 hover:text-neutral-200
+            hover:bg-white/[0.04]
+            transition-all duration-200 ease-out
+            active:scale-95
           "
         >
-          ✦ Pro
+          Pro
         </button>
 
-        {/* Shuffle */}
+        {/* Shuffle — text-only */}
         <button
           onClick={() => initBoard()}
           className="
-            px-4 py-1.5 rounded-full text-sm font-medium
-            border border-slate-700 hover:border-slate-600
-            text-slate-400 hover:text-slate-200
-            hover:bg-slate-800/60
-            active:scale-95 transition-all duration-150
+            px-3 py-1.5 rounded-md text-xs font-normal tracking-tight
+            text-neutral-600 hover:text-neutral-300
+            hover:bg-white/[0.03]
+            transition-all duration-200 ease-out
+            active:scale-95
           "
         >
-          ↺ Shuffle
+          Shuffle
         </button>
       </div>
     </header>
@@ -106,12 +102,12 @@ function Stat({
 }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className="text-[10px] uppercase tracking-widest text-slate-600">
+      <span className="text-[9px] uppercase tracking-[0.12em] text-neutral-700 font-normal">
         {label}
       </span>
       <span
-        className={`text-sm font-semibold tabular-nums ${
-          highlight ? 'text-teal-400' : 'text-slate-200'
+        className={`text-sm font-light tabular-nums tracking-tight ${
+          highlight ? 'text-neutral-200' : 'text-neutral-400'
         }`}
       >
         {value}

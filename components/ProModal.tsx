@@ -57,112 +57,90 @@ export default function ProModal({ isOpen, onClose }: ProModalProps) {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-lg">
-      {/* Header — dark glass with teal tint */}
-      <div className="
-        relative px-6 pt-8 pb-6
-        bg-gradient-to-br from-slate-900 to-slate-950
-        border-b border-slate-800
-      ">
-        {/* Subtle teal glow behind header */}
-        <div aria-hidden className="
-          absolute inset-0 pointer-events-none
-          bg-gradient-to-br from-teal-500/5 to-transparent rounded-t-2xl
-        " />
-
-        {/* Close */}
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-md">
+      {/* Header */}
+      <div className="relative px-6 pt-7 pb-5 border-b border-white/[0.06] bg-[#111111]">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-500 hover:text-slate-300
-                     transition-colors text-lg leading-none"
+          className="absolute top-4 right-5 text-neutral-600 hover:text-neutral-300
+                     transition-colors duration-150 text-base leading-none"
           aria-label="Close"
         >
           ✕
         </button>
 
-        <div className="flex items-center gap-2 mb-1 relative">
-          <span className="text-teal-400 text-xl">✦</span>
-          <span className="text-xs font-semibold uppercase tracking-widest text-teal-400">
-            Flow Pro
-          </span>
-        </div>
-        <h2 className="text-2xl font-semibold text-slate-100 tracking-tight relative">
+        <p className="text-[10px] uppercase tracking-[0.14em] text-neutral-600 font-normal mb-2">
+          Flow Pro
+        </p>
+        <h2 className="text-xl font-light tracking-tight text-neutral-100">
           Enter deeper flow.
         </h2>
-        <p className="mt-1 text-sm text-slate-400 relative">
+        <p className="mt-1 text-sm font-light text-neutral-500 tracking-tight">
           Unlock the full Mahjong Flow experience.
         </p>
 
-        {/* Price */}
-        <div className="mt-4 flex items-baseline gap-1.5 relative">
-          <span className="text-3xl font-semibold text-slate-100">$4</span>
-          <span className="text-slate-500 text-sm">/ month</span>
-          <span className="ml-2 text-[11px] bg-teal-500/10 text-teal-300
-                           px-2 py-0.5 rounded-full font-medium border border-teal-500/20">
+        <div className="mt-4 flex items-baseline gap-1.5">
+          <span className="text-2xl font-normal tracking-tight text-neutral-100">$4</span>
+          <span className="text-neutral-600 text-xs font-light">/ month</span>
+          <span className="ml-2 text-[10px] border border-white/[0.1] text-neutral-400
+                           px-2 py-0.5 rounded font-normal tracking-tight">
             7-day free trial
           </span>
         </div>
       </div>
 
       {/* Body */}
-      <div className="px-6 py-5 space-y-5 bg-slate-950">
+      <div className="px-6 py-5 space-y-5 bg-[#0e0e0e]">
         {/* Benefits */}
-        <ul className="space-y-3">
-          {BENEFITS.map((b, i) => {
-            // Cycle accent colors: teal, rose, yellow, fuchsia
-            const iconColors = ['text-teal-400', 'text-rose-400', 'text-yellow-300', 'text-fuchsia-400'];
-            return (
-              <li key={b.title} className="flex items-start gap-3">
-                <span className={`mt-0.5 text-lg shrink-0 ${iconColors[i % iconColors.length]}`}>
-                  {b.icon}
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-slate-200">{b.title}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{b.desc}</p>
-                </div>
-              </li>
-            );
-          })}
+        <ul className="space-y-3.5">
+          {BENEFITS.map((b) => (
+            <li key={b.title} className="flex items-start gap-3">
+              <span className="mt-0.5 text-base shrink-0 text-neutral-500">{b.icon}</span>
+              <div>
+                <p className="text-sm font-normal tracking-tight text-neutral-300">{b.title}</p>
+                <p className="text-xs font-light text-neutral-600 mt-0.5 tracking-tight">{b.desc}</p>
+              </div>
+            </li>
+          ))}
         </ul>
 
-        {/* Focus Stats preview (locked teaser) */}
-        <div className="rounded-xl border border-slate-800 p-4 relative bg-slate-900/60">
+        {/* Focus Stats preview — locked teaser */}
+        <div className="rounded-lg border border-white/[0.06] p-4 relative bg-white/[0.02]">
           <FocusStats locked />
-          <div className="absolute inset-0 flex items-center justify-center rounded-xl">
-            <span className="text-xs font-medium text-teal-300
-                             bg-slate-950/90 px-3 py-1.5 rounded-full
-                             border border-teal-500/30">
-              ✦ Unlock with Pro
+          <div className="absolute inset-0 flex items-center justify-center rounded-lg backdrop-blur-[2px]">
+            <span className="text-[11px] font-normal tracking-tight text-neutral-400
+                             bg-[#0e0e0e]/95 px-3 py-1.5 rounded
+                             border border-white/[0.1]">
+              Unlock with Pro
             </span>
           </div>
         </div>
 
-        {/* CTA — turquoise neon glow */}
+        {/* CTA — Vercel-style: solid white on black */}
         <button
           onClick={handleCheckout}
           disabled={loading}
-          style={{ boxShadow: '0 0 15px rgba(45,212,191,0.4), 0 0 30px rgba(45,212,191,0.15)' }}
           className="
-            w-full py-3 rounded-xl font-semibold text-sm
-            bg-teal-500 hover:bg-teal-400 active:bg-teal-600
-            text-slate-950
-            transition-all duration-150 active:scale-[0.98]
-            disabled:opacity-60 disabled:cursor-wait
+            w-full py-2.5 rounded-lg text-sm font-normal tracking-tight
+            bg-white hover:bg-neutral-100 active:bg-neutral-200
+            text-[#0a0a0a]
+            transition-all duration-150 active:scale-[0.99]
+            disabled:opacity-50 disabled:cursor-wait
             flex items-center justify-center gap-2
           "
         >
           {loading ? (
             <>
-              <span className="animate-spin text-base">◌</span>
+              <span className="animate-spin text-sm">◌</span>
               Preparing checkout…
             </>
           ) : (
-            <>✦ Start Free Trial — Upgrade to Pro</>
+            'Start Free Trial'
           )}
         </button>
 
-        <p className="text-center text-[11px] text-slate-600">
-          Cancel anytime. No lock-in.
+        <p className="text-center text-[11px] font-light text-neutral-700 tracking-tight">
+          Cancel anytime.
         </p>
       </div>
     </Modal>

@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
-/* ── Class-based dark mode (html has class="dark" always) ───── */
+/* ── Class-based dark mode — html carries class="dark" always ── */
 @custom-variant dark (&:is(.dark, .dark *));
 
 /* ── Design tokens ──────────────────────────────────────────── */
 :root {
-  --background: #020617;   /* slate-950 */
-  --foreground: #f1f5f9;   /* slate-100 */
+  --background: #0a0a0a;
+  --foreground: #e5e5e5;  /* neutral-200 */
 }
 
 @theme inline {
@@ -23,27 +23,24 @@ body {
 }
 
 body {
+  background: #0a0a0a;
   color: var(--foreground);
   font-family: var(--font-sans, system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
-  /* Vibrant dark gradient — fixed so it never scrolls */
-  background: linear-gradient(135deg,
-    #020617 0%,
-    #040f1a 35%,
-    #071015 65%,
-    #0f0a04 100%);
-  background-attachment: fixed;
+  text-rendering: optimizeLegibility;
 }
 
-/* Teal + coral ambient glows — purely decorative depth layer */
+/* Single extremely faint ambient highlight — barely perceptible,
+   just enough to prevent the bg from feeling like a void. */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 25%, rgba(20,184,166,0.07) 0%, transparent 65%),
-    radial-gradient(ellipse 45% 40% at 85% 75%, rgba(251,113,133,0.05) 0%, transparent 60%),
-    radial-gradient(ellipse 35% 30% at 10% 80%, rgba(167,139,250,0.04) 0%, transparent 55%);
+  background: radial-gradient(
+    ellipse 55% 35% at 50% 30%,
+    rgba(255, 255, 255, 0.022) 0%,
+    transparent 70%
+  );
   pointer-events: none;
   z-index: 0;
 }
