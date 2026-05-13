@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useMemo, useState } from 'react';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Layers } from 'lucide-react';
 import { useMahjongStore, hasAvailableMoves } from '@/store/mahjongStore';
 import ThemeToggle from './ThemeToggle';
 
@@ -206,7 +206,12 @@ export default function TopBar({ onProClick, onProfileClick, onRulesClick, nickn
                 : 'border border-black/[0.07] dark:border-white/[0.07] text-neutral-500 dark:text-neutral-700 cursor-pointer hover:text-neutral-800 dark:hover:text-neutral-500',
             ].join(' ')}
           >
-            {skin === 'pro' ? '✦ elemental' : !isPro ? '🀄 classic ✦' : '🀄 classic'}
+            {skin === 'pro'
+              ? '✦ elemental'
+              : <span className="flex items-center gap-1.5">
+                  <Layers size={11} strokeWidth={1.5} />
+                  {!isPro ? 'classic ✦' : 'classic'}
+                </span>}
           </button>
 
           {/* Hint */}
@@ -314,7 +319,7 @@ export default function TopBar({ onProClick, onProfileClick, onRulesClick, nickn
                   : 'border border-black/[0.07] dark:border-white/[0.07] text-neutral-500 dark:text-neutral-700',
               ].join(' ')}
             >
-              {skin === 'pro' ? '✦' : '🀄'}
+              {skin === 'pro' ? '✦' : <Layers size={12} strokeWidth={1.5} />}
             </button>
             <button
               onClick={onRulesClick}
