@@ -58,6 +58,21 @@ interface TileCellProps {
   isHinted?: boolean;
 }
 
+// Light-mode element surfaces — applied only on free tiles in pro skin
+const ELEMENT_SURFACE_LIGHT = [
+  'bg-emerald-50  border-emerald-200',   // Earth
+  'bg-blue-50     border-blue-200',      // Water
+  'bg-orange-50   border-orange-200',    // Fire
+  'bg-slate-50    border-slate-200',     // Air
+] as const;
+
+const ELEMENT_HOVER_LIGHT = [
+  'hover:bg-emerald-100 hover:border-emerald-300',  // Earth
+  'hover:bg-blue-100    hover:border-blue-300',      // Water
+  'hover:bg-orange-100  hover:border-orange-300',    // Fire
+  'hover:bg-slate-100   hover:border-slate-300',     // Air
+] as const;
+
 export default function TileCell({ tile, isFree, onClick, isPro = false, isHinted = false }: TileCellProps) {
   const { resolvedTheme } = useTheme();
   const isDark        = resolvedTheme !== 'light';
@@ -67,6 +82,9 @@ export default function TileCell({ tile, isFree, onClick, isPro = false, isHinte
   const themeColor    = GROUP_COLORS[groupIndex];
   const level         = (tile.type % 9) + 1;
   const classicSymbol = CLASSIC_SYMBOLS[tile.type % CLASSIC_SYMBOLS.length];
+
+  // Use element tint in light mode for free elemental tiles (not selected)
+  const useElementTint = !isDark && skin === 'pro' && isFree && !tile.state.includes('selected');
 
   // ── Position — UNCHANGED logic ───────────────────────────────────────────
   const left   = tile.x * STEP_X + tile.z * LAYER_OFFSET;
@@ -117,13 +135,17 @@ export default function TileCell({ tile, isFree, onClick, isPro = false, isHinte
             // ── Surface ────────────────────────────────────────────────────
             isSelected
               ? 'bg-yellow-400/[0.12] border-yellow-400/[0.6]'
+              : useElementTint
+              ? ELEMENT_SURFACE_LIGHT[groupIndex]
               : isPro
               ? 'bg-white dark:bg-white/[0.05] border-neutral-200 dark:border-white/[0.12]'
               : 'bg-white dark:bg-white/[0.03] border-neutral-200/80 dark:border-white/[0.08]',
 
             // ── Hover (free & not selected) ────────────────────────────────
             isFree && !isSelected
-              ? isPro
+              ? useElementTint
+                ? `cursor-pointer ${ELEMENT_HOVER_LIGHT[groupIndex]}`
+                : isPro
                 ? 'cursor-pointer hover:bg-neutral-50 hover:border-neutral-300 dark:hover:bg-white/[0.09] dark:hover:border-white/[0.22]'
                 : 'cursor-pointer hover:bg-neutral-50 hover:border-neutral-300/80 dark:hover:bg-white/[0.06] dark:hover:border-white/[0.15]'
               : '',
