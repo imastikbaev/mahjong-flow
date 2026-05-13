@@ -73,6 +73,36 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
         <div className="h-px bg-black/[0.06] dark:bg-white/[0.06]" />
 
         <p className="text-[10px] uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-600 font-normal">
+          Modes
+        </p>
+
+        <RuleSection icon="◇" title="Daily">
+          Everyone gets the same board each day, generated from today&apos;s date. Scores go to the global leaderboard.
+        </RuleSection>
+
+        <RuleSection icon="◇" title="Practice">
+          A random board each time — no leaderboard submission. Use it to warm up or test strategies.
+        </RuleSection>
+
+        <RuleSection icon="⏱" title="Sprint" pro>
+          3 minutes, as many pairs as possible. Score = pairs × 100 + remaining seconds × 10.
+          The timer turns red below 30 seconds. Pro only.
+        </RuleSection>
+
+        <div className="h-px bg-black/[0.06] dark:bg-white/[0.06]" />
+
+        <p className="text-[10px] uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-600 font-normal">
+          AI Coach
+        </p>
+
+        <RuleSection icon="◈" title="Board analysis">
+          Open the coach panel (◈ ai coach button, bottom-right) to see live tips: how many free pairs
+          remain, which layer to prioritise, and which single move unlocks the most tiles.
+        </RuleSection>
+
+        <div className="h-px bg-black/[0.06] dark:bg-white/[0.06]" />
+
+        <p className="text-[10px] uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-600 font-normal">
           Difficulty
         </p>
 
