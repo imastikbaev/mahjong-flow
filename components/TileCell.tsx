@@ -61,14 +61,16 @@ function depthShadow(z: number, dark: boolean): string {
 }
 
 const SELECTED_SHADOW_DARK =
-  '0 0 0 1.5px rgba(250,204,21,0.7), ' +
-  '0 0 18px rgba(250,204,21,0.25), ' +
-  '0 8px 30px rgba(0,0,0,0.6)';
+  '0 0 0 2px rgba(250,204,21,0.9), ' +        // bright yellow ring
+  '0 0 20px rgba(250,204,21,0.55), ' +         // neon outer glow
+  '0 0 40px rgba(250,204,21,0.20), ' +         // wide diffuse halo
+  '0 8px 30px rgba(0,0,0,0.6)';               // depth
 
 const SELECTED_SHADOW_LIGHT =
-  '0 0 0 1.5px rgba(217,119,6,0.6), ' +   // amber-600 ring — readable on white
-  '0 0 12px rgba(251,191,36,0.20), ' +      // soft glow
-  '0 4px 12px rgba(0,0,0,0.10)';           // gentle depth
+  '0 0 0 2px rgba(234,179,8,0.95), ' +         // yellow-500 ring — vivid on white
+  '0 0 16px rgba(250,204,21,0.50), ' +          // neon glow
+  '0 0 32px rgba(250,204,21,0.18), ' +          // wide halo
+  '0 4px 12px rgba(0,0,0,0.10)';               // gentle depth
 
 // ---------------------------------------------------------------------------
 // Component
@@ -167,8 +169,8 @@ export default function TileCell({ tile, isFree, onClick, isPro = false, isHinte
             // ── Surface ────────────────────────────────────────────────────
             isSelected
               ? isDark
-                ? 'bg-yellow-400/[0.12] border-yellow-400/[0.6]'
-                : 'bg-amber-100 border-amber-400'
+                ? 'bg-yellow-400/[0.18] border-yellow-400/[0.85]'
+                : 'bg-yellow-100 border-yellow-400'
               : useElementTint
               ? ELEMENT_SURFACE_LIGHT[groupIndex]
               : isPro
