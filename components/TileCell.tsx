@@ -1,5 +1,6 @@
 'use client';
 
+import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tile, useMahjongStore } from '@/store/mahjongStore';
 import { TILE_ICONS, GROUP_COLORS, CLASSIC_SYMBOLS } from './tileSymbols';
@@ -18,15 +19,24 @@ export const LAYER_OFFSET = 4;
 // Depth shadow — soft drop-shadow scales with z, no thick borders
 // ---------------------------------------------------------------------------
 
-function depthShadow(z: number): string {
-  // Progressively deeper shadow as tiles stack higher.
-  // All values use rgba(0,0,0,…) so they stay neutral and never tint.
-  const shadows: string[] = [
-    '0 2px 8px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.3)',           // z=0
-    '0 4px 16px rgba(0,0,0,0.65), 0 2px 4px rgba(0,0,0,0.35)',          // z=1
-    '0 8px 24px rgba(0,0,0,0.72), 0 3px 6px rgba(0,0,0,0.4)',           // z=2
-    '0 12px 36px rgba(0,0,0,0.80), 0 4px 8px rgba(0,0,0,0.45)',         // z=3
-    '0 16px 48px rgba(0,0,0,0.85), 0 6px 12px rgba(0,0,0,0.5)',         // z=4+
+function depthShadow(z: number, dark: boolean): string {
+  if (dark) {
+    const shadows = [
+      '0 2px 8px rgba(0,0,0,0.55), 0 1px 2px rgba(0,0,0,0.3)',
+      '0 4px 16px rgba(0,0,0,0.65), 0 2px 4px rgba(0,0,0,0.35)',
+      '0 8px 24px rgba(0,0,0,0.72), 0 3px 6px rgba(0,0,0,0.4)',
+      '0 12px 36px rgba(0,0,0,0.80), 0 4px 8px rgba(0,0,0,0.45)',
+      '0 16px 48px rgba(0,0,0,0.85), 0 6px 12px rgba(0,0,0,0.5)',
+    ];
+    return shadows[Math.min(z, shadows.length - 1)];
+  }
+  // Light mode — softer, warmer shadows so tiles read clearly on #f5f5f5
+  const shadows = [
+    '0 2px 6px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)',
+    '0 4px 12px rgba(0,0,0,0.13), 0 2px 4px rgba(0,0,0,0.08)',
+    '0 6px 18px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.09)',
+    '0 8px 24px rgba(0,0,0,0.18), 0 4px 8px rgba(0,0,0,0.10)',
+    '0 12px 32px rgba(0,0,0,0.20), 0 5px 10px rgba(0,0,0,0.11)',
   ];
   return shadows[Math.min(z, shadows.length - 1)];
 }
@@ -49,6 +59,8 @@ interface TileCellProps {
 }
 
 export default function TileCell({ tile, isFree, onClick, isPro = false, isHinted = false }: TileCellProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark        = resolvedTheme !== 'light';
   const skin          = useMahjongStore((s) => s.skin);
   const IconComponent = TILE_ICONS[tile.type % TILE_ICONS.length];
   const groupIndex    = Math.floor((tile.type % 36) / 9);
@@ -87,7 +99,7 @@ export default function TileCell({ tile, isFree, onClick, isPro = false, isHinte
             width:  TILE_W,
             height: TILE_H,
             zIndex,
-            boxShadow: isSelected ? SELECTED_SHADOW : depthShadow(tile.z),
+            boxShadow: isSelected ? SELECTED_SHADOW : depthShadow(tile.z, isDark),
             animation: isHinted ? 'hint-pulse 1.2s ease-in-out infinite' : undefined,
           }}
           disabled={!isFree}
@@ -106,14 +118,14 @@ export default function TileCell({ tile, isFree, onClick, isPro = false, isHinte
             isSelected
               ? 'bg-yellow-400/[0.12] border-yellow-400/[0.6]'
               : isPro
-              ? 'bg-black/[0.05] dark:bg-white/[0.05] border-black/[0.1] dark:border-white/[0.12]'
-              : 'bg-black/[0.04] dark:bg-white/[0.03] border-black/[0.08] dark:border-white/[0.08]',
+              ? 'bg-white dark:bg-white/[0.05] border-neutral-200 dark:border-white/[0.12]'
+              : 'bg-white dark:bg-white/[0.03] border-neutral-200/80 dark:border-white/[0.08]',
 
             // ── Hover (free & not selected) ────────────────────────────────
             isFree && !isSelected
               ? isPro
-                ? 'cursor-pointer hover:bg-black/[0.08] hover:border-black/[0.18] dark:hover:bg-white/[0.09] dark:hover:border-white/[0.22]'
-                : 'cursor-pointer hover:bg-black/[0.07] hover:border-black/[0.14] dark:hover:bg-white/[0.06] dark:hover:border-white/[0.15]'
+                ? 'cursor-pointer hover:bg-neutral-50 hover:border-neutral-300 dark:hover:bg-white/[0.09] dark:hover:border-white/[0.22]'
+                : 'cursor-pointer hover:bg-neutral-50 hover:border-neutral-300/80 dark:hover:bg-white/[0.06] dark:hover:border-white/[0.15]'
               : '',
 
             // ── Locked — stronger greyscale + opacity ──────────────────────

@@ -68,13 +68,13 @@ export default function MahjongBoard() {
       ref={containerRef}
       className="flex-1 flex items-center justify-center overflow-hidden p-4 relative z-10"
     >
-      {/* Ambient glow */}
+      {/* Ambient glow — dark: white haze, light: neutral shadow pool */}
       <div
         aria-hidden
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
       >
         <div
-          className="w-[600px] h-[400px] rounded-full bg-white/[0.025]"
+          className="w-[600px] h-[400px] rounded-full dark:bg-white/[0.025] bg-black/[0.04]"
           style={{ filter: 'blur(120px)' }}
         />
       </div>
