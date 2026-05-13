@@ -1,10 +1,16 @@
 @import "tailwindcss";
 
-/* ── Class-based dark mode — html carries class="dark" always ── */
+/* ── Class-based dark mode — next-themes adds/removes .dark on <html> ── */
 @custom-variant dark (&:is(.dark, .dark *));
 
-/* ── Design tokens ──────────────────────────────────────────── */
+/* ── Light mode tokens (default) ────────────────────────────────────── */
 :root {
+  --background: #f5f5f5;  /* neutral-100 */
+  --foreground: #171717;  /* neutral-900 */
+}
+
+/* ── Dark mode tokens ────────────────────────────────────────────────── */
+.dark {
   --background: #0a0a0a;
   --foreground: #e5e5e5;  /* neutral-200 */
 }
@@ -23,22 +29,21 @@ body {
 }
 
 body {
-  background: #0a0a0a;
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans, system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Hint tile pulse — used by TileCell when hintedId matches */
+/* Hint tile pulse — amber glow, visible on both light and dark backgrounds */
 @keyframes hint-pulse {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(255,255,255,0.25), 0 0  8px rgba(255,255,255,0.06); }
-  50%       { box-shadow: 0 0 0 2px rgba(255,255,255,0.60), 0 0 20px rgba(255,255,255,0.12); }
+  0%, 100% { box-shadow: 0 0 0 1px rgba(250,204,21,0.35), 0 0  8px rgba(250,204,21,0.1); }
+  50%       { box-shadow: 0 0 0 2px rgba(250,204,21,0.65), 0 0 20px rgba(250,204,21,0.2); }
 }
 
-/* Single extremely faint ambient highlight — barely perceptible,
-   just enough to prevent the bg from feeling like a void. */
-body::before {
+/* Single extremely faint ambient highlight — dark mode only */
+.dark body::before {
   content: '';
   position: fixed;
   inset: 0;

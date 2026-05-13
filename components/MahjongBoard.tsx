@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useMahjongStore, isTileFree } from '@/store/mahjongStore';
 import TileCell, { TILE_W, TILE_H, STEP_X, STEP_Y, LAYER_OFFSET } from './TileCell';
@@ -32,6 +32,29 @@ export default function MahjongBoard() {
     };
   }, [tiles]);
 
+  // ── Auto-scale to fit container ──────────────────────────────────────────
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    if (canvasW === 0 || canvasH === 0) return;
+
+    const update = () => {
+      const el = containerRef.current;
+      if (!el) return;
+      const pad = 32;
+      const availW = el.clientWidth  - pad;
+      const availH = el.clientHeight - pad;
+      const s = Math.min(1, availW / canvasW, availH / canvasH);
+      setScale(Math.max(0.4, s)); // never go below 0.4
+    };
+
+    update();
+    const ro = new ResizeObserver(update);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, [canvasW, canvasH]);
+
   if (tiles.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center text-neutral-600 text-sm font-light tracking-wide">
@@ -41,8 +64,11 @@ export default function MahjongBoard() {
   }
 
   return (
-    <main className="flex-1 flex items-center justify-center overflow-auto p-8 relative z-10">
-      {/* Ambient glow — sits behind the tile canvas, never above it */}
+    <main
+      ref={containerRef}
+      className="flex-1 flex items-center justify-center overflow-hidden p-4 relative z-10"
+    >
+      {/* Ambient glow */}
       <div
         aria-hidden
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
@@ -53,22 +79,42 @@ export default function MahjongBoard() {
         />
       </div>
 
-      {/* Tile canvas */}
+      {/*
+        Outer div: takes up the SCALED dimensions so flex layout centres correctly.
+        Inner div: full canvas size, scaled via CSS transform from top-left.
+      */}
       <div
-        style={{ width: canvasW, height: canvasH, position: 'relative', flexShrink: 0 }}
+        style={{
+          width:    canvasW * scale,
+          height:   canvasH * scale,
+          position: 'relative',
+          flexShrink: 0,
+        }}
       >
-        <AnimatePresence>
-          {tiles.map((tile) => (
-            <TileCell
-              key={tile.id}
-              tile={tile}
-              isFree={freeIds.has(tile.id)}
-              onClick={selectTile}
-              isPro={isPro}
-              isHinted={tile.id === hintedId}
-            />
-          ))}
-        </AnimatePresence>
+        <div
+          style={{
+            width:           canvasW,
+            height:          canvasH,
+            position:        'absolute',
+            top:             0,
+            left:            0,
+            transformOrigin: 'top left',
+            transform:       `scale(${scale})`,
+          }}
+        >
+          <AnimatePresence>
+            {tiles.map((tile) => (
+              <TileCell
+                key={tile.id}
+                tile={tile}
+                isFree={freeIds.has(tile.id)}
+                onClick={selectTile}
+                isPro={isPro}
+                isHinted={tile.id === hintedId}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
       </div>
     </main>
   );

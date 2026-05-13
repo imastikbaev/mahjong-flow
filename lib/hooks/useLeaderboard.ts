@@ -43,12 +43,17 @@ export function useLeaderboard({
     setError(null);
 
     try {
-      // Build the filter chain first, then terminate with .returns<T>()
-      // (.returns() produces a PostgrestTransformBuilder that has no .eq(),
-      //  so all filters must come before it).
+      // For local scope we use users!inner so PostgREST can filter parent
+      // rows by the related user's city.  For global scope a plain left-join
+      // is fine (and slightly cheaper).
+      const selectClause =
+        scope === 'local' && city
+          ? '*, users!inner(nickname, city)'
+          : '*, users(nickname, city)';
+
       let filterQuery = supabase
         .from('leaderboard')
-        .select('*, users(nickname, city)')
+        .select(selectClause)
         .eq('date', date)
         .eq('type', 'daily')
         .order('score', { ascending: false })

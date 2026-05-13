@@ -1,8 +1,8 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Tile } from '@/store/mahjongStore';
-import { TILE_SYMBOLS } from './tileSymbols';
+import { Tile, useMahjongStore } from '@/store/mahjongStore';
+import { TILE_ICONS, GROUP_COLORS, CLASSIC_SYMBOLS } from './tileSymbols';
 
 // ---------------------------------------------------------------------------
 // Layout constants — UNCHANGED (game logic depends on these)
@@ -32,8 +32,8 @@ function depthShadow(z: number): string {
 }
 
 const SELECTED_SHADOW =
-  '0 0 0 1px rgba(255,255,255,0.35), ' +
-  '0 0 20px rgba(255,255,255,0.08), ' +
+  '0 0 0 1.5px rgba(250,204,21,0.7), ' +   // amber-400 ring
+  '0 0 18px rgba(250,204,21,0.25), ' +       // outer amber glow
   '0 8px 30px rgba(0,0,0,0.6)';
 
 // ---------------------------------------------------------------------------
@@ -49,7 +49,12 @@ interface TileCellProps {
 }
 
 export default function TileCell({ tile, isFree, onClick, isPro = false, isHinted = false }: TileCellProps) {
-  const symbol = TILE_SYMBOLS[tile.type % TILE_SYMBOLS.length];
+  const skin          = useMahjongStore((s) => s.skin);
+  const IconComponent = TILE_ICONS[tile.type % TILE_ICONS.length];
+  const groupIndex    = Math.floor((tile.type % 36) / 9);
+  const themeColor    = GROUP_COLORS[groupIndex];
+  const level         = (tile.type % 9) + 1;
+  const classicSymbol = CLASSIC_SYMBOLS[tile.type % CLASSIC_SYMBOLS.length];
 
   // ── Position — UNCHANGED logic ───────────────────────────────────────────
   const left   = tile.x * STEP_X + tile.z * LAYER_OFFSET;
@@ -87,7 +92,7 @@ export default function TileCell({ tile, isFree, onClick, isPro = false, isHinte
           }}
           disabled={!isFree}
           onClick={() => isFree && onClick(tile.id)}
-          aria-label={`Tile ${symbol} layer ${tile.z}`}
+          aria-label={`Tile type ${tile.type} level ${level} layer ${tile.z}`}
           className={[
             // Shape
             'rounded-md border select-none',
@@ -99,26 +104,47 @@ export default function TileCell({ tile, isFree, onClick, isPro = false, isHinte
 
             // ── Surface ────────────────────────────────────────────────────
             isSelected
-              ? 'bg-white/[0.12] border-white/[0.45] text-white'
+              ? 'bg-yellow-400/[0.12] border-yellow-400/[0.6]'
               : isPro
-              ? 'bg-white/[0.05] border-white/[0.12] text-neutral-300'
-              : 'bg-white/[0.03] border-white/[0.08] text-neutral-400',
+              ? 'bg-black/[0.05] dark:bg-white/[0.05] border-black/[0.1] dark:border-white/[0.12]'
+              : 'bg-black/[0.04] dark:bg-white/[0.03] border-black/[0.08] dark:border-white/[0.08]',
 
             // ── Hover (free & not selected) ────────────────────────────────
             isFree && !isSelected
               ? isPro
-                ? 'cursor-pointer hover:bg-white/[0.09] hover:border-white/[0.22] hover:text-neutral-100'
-                : 'cursor-pointer hover:bg-white/[0.06] hover:border-white/[0.15] hover:text-neutral-200'
+                ? 'cursor-pointer hover:bg-black/[0.08] hover:border-black/[0.18] dark:hover:bg-white/[0.09] dark:hover:border-white/[0.22]'
+                : 'cursor-pointer hover:bg-black/[0.07] hover:border-black/[0.14] dark:hover:bg-white/[0.06] dark:hover:border-white/[0.15]'
               : '',
 
-            // ── Locked ─────────────────────────────────────────────────────
-            !isFree ? 'opacity-30 grayscale cursor-not-allowed' : '',
+            // ── Locked — stronger greyscale + opacity ──────────────────────
+            !isFree ? 'opacity-20 grayscale-[80%] cursor-not-allowed' : '',
           ].join(' ')}
         >
-          {/* Glyph — weight switches with state, colour is monochrome */}
-          <span className="text-lg leading-none font-light tracking-tight select-none">
-            {symbol}
-          </span>
+          {skin === 'classic' ? (
+            /* ── Classic skin: authentic Mahjong Unicode ── */
+            <span
+              className={`text-3xl leading-none select-none ${
+                isSelected
+                  ? 'text-neutral-900 dark:text-white'
+                  : 'text-neutral-700 dark:text-neutral-300'
+              }`}
+            >
+              {classicSymbol}
+            </span>
+          ) : (
+            /* ── Pro skin: Elemental Lucide icons ── */
+            <>
+              {/* Level indicator — top-right corner */}
+              <span className="absolute top-1 right-1.5 text-[9px] opacity-40 font-mono select-none leading-none">
+                {level}
+              </span>
+              <IconComponent
+                size={20 + level * 0.8}
+                className={`select-none ${isSelected ? 'text-yellow-300' : themeColor}`}
+                strokeWidth={1.5}
+              />
+            </>
+          )}
         </motion.button>
       )}
     </AnimatePresence>

@@ -4,10 +4,12 @@ import { useState } from 'react';
 import Modal from './Modal';
 import FocusStats from './FocusStats';
 import { useMahjongStore } from '@/store/mahjongStore';
+import type { GameRecord } from '@/lib/hooks/useGameHistory';
 
 interface ProModalProps {
   isOpen: boolean;
   onClose: () => void;
+  gameHistory?: GameRecord[];
 }
 
 const BENEFITS = [
@@ -33,7 +35,7 @@ const BENEFITS = [
   },
 ];
 
-export default function ProModal({ isOpen, onClose }: ProModalProps) {
+export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModalProps) {
   const [loading, setLoading] = useState(false);
   const isPro        = useMahjongStore((s) => s.isPro);
   const activatePro  = useMahjongStore((s) => s.activatePro);
@@ -88,7 +90,7 @@ export default function ProModal({ isOpen, onClose }: ProModalProps) {
           <div className="px-6 py-5 space-y-5 bg-[#0e0e0e]">
             {/* Unlocked FocusStats */}
             <div className="rounded-lg border border-white/[0.06] p-4 bg-white/[0.02]">
-              <FocusStats locked={false} />
+              <FocusStats locked={false} gameHistory={gameHistory} />
             </div>
 
             {/* Benefits — checkmarked */}

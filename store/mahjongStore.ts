@@ -7,6 +7,7 @@ import { create } from 'zustand';
 export type TileState  = 'idle' | 'selected' | 'matched';
 export type GameMode   = 'daily' | 'practice';
 export type Difficulty = 'easy' | 'medium' | 'hard';
+export type Skin       = 'classic' | 'pro';
 
 export interface Tile {
   id: number;
@@ -25,11 +26,15 @@ interface MahjongState {
   selectedId: number | null;
   gameMode: GameMode;
   difficulty: Difficulty;
+  skin: Skin;
   elapsedSeconds: number;
   isComplete: boolean;
   isPro: boolean;
   history: Tile[][];
   hintedId: number | null;
+  sprintMode: boolean;
+  sprintSecondsLeft: number;
+  isFailed: boolean;
 
   initBoard: (mode?: GameMode) => void;
   selectTile: (id: number) => void;
@@ -39,8 +44,11 @@ interface MahjongState {
   deactivatePro: () => void;
   undoMove: () => void;
   setDifficulty: (d: Difficulty) => void;
+  setSkin: (skin: Skin) => void;
   getHint: () => void;
   reshuffleRemaining: () => void;
+  setGameMode: (mode: GameMode) => void;
+  setSprintMode: (on: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,38 +57,34 @@ interface MahjongState {
 
 const TILE_TYPE_COUNT = 36;
 
-const TURTLE_LAYOUT: [number, number, number][] = [
-  // --- Layer 0 (ground) ---
-  [0, 4, 0], [2, 4, 0],
-  [2, 0, 0], [4, 0, 0], [6, 0, 0], [8, 0, 0], [10, 0, 0], [12, 0, 0],
-  [14, 0, 0], [16, 0, 0],
-  [0, 2, 0], [2, 2, 0], [4, 2, 0], [6, 2, 0], [8, 2, 0], [10, 2, 0],
-  [12, 2, 0], [14, 2, 0], [16, 2, 0], [18, 2, 0],
-  [2, 4, 0], [4, 4, 0], [6, 4, 0], [8, 4, 0], [10, 4, 0], [12, 4, 0],
-  [14, 4, 0], [16, 4, 0],
-  [0, 6, 0], [2, 6, 0], [4, 6, 0], [6, 6, 0], [8, 6, 0], [10, 6, 0],
-  [12, 6, 0], [14, 6, 0], [16, 6, 0], [18, 6, 0],
-  [2, 8, 0], [4, 8, 0], [6, 8, 0], [8, 8, 0], [10, 8, 0], [12, 8, 0],
-  [14, 8, 0], [16, 8, 0],
-  [0, 4, 0], [20, 4, 0],
-  [2, 10, 0], [4, 10, 0], [6, 10, 0], [8, 10, 0], [10, 10, 0], [12, 10, 0],
-  [14, 10, 0], [16, 10, 0],
-  [0, 8, 0], [2, 8, 0], [4, 8, 0], [6, 8, 0], [8, 8, 0], [10, 8, 0],
-  [12, 8, 0], [14, 8, 0], [16, 8, 0], [18, 8, 0],
-  // --- Layer 1 ---
-  [4, 2, 1], [6, 2, 1], [8, 2, 1], [10, 2, 1], [12, 2, 1], [14, 2, 1],
-  [4, 4, 1], [6, 4, 1], [8, 4, 1], [10, 4, 1], [12, 4, 1], [14, 4, 1],
-  [4, 6, 1], [6, 6, 1], [8, 6, 1], [10, 6, 1], [12, 6, 1], [14, 6, 1],
-  [4, 8, 1], [6, 8, 1], [8, 8, 1], [10, 8, 1], [12, 8, 1], [14, 8, 1],
-  // --- Layer 2 ---
-  [6, 4, 2], [8, 4, 2], [10, 4, 2], [12, 4, 2],
-  [6, 6, 2], [8, 6, 2], [10, 6, 2], [12, 6, 2],
-  // --- Layer 3 ---
-  [8, 4, 3], [10, 4, 3],
-  [8, 6, 3], [10, 6, 3],
-  // --- Layer 4 (apex) ---
-  [9, 5, 4],
-];
+const TURTLE_LAYOUT: [number, number, number][] = (() => {
+  const t: [number, number, number][] = [];
+  // Layer 0 — 8×8 base (64) + 8 wing tiles = 72
+  for (let y = 0; y <= 14; y += 2)
+    for (let x = 2; x <= 16; x += 2)
+      t.push([x, y, 0]);
+  for (const y of [4, 6, 8, 10]) {
+    t.push([0,  y, 0]);
+    t.push([18, y, 0]);
+  }
+  // Layer 1 — 7 × 6 = 42
+  for (let y = 2; y <= 12; y += 2)
+    for (let x = 2; x <= 14; x += 2)
+      t.push([x, y, 1]);
+  // Layer 2 — 5 × 4 = 20
+  for (let y = 4; y <= 10; y += 2)
+    for (let x = 4; x <= 12; x += 2)
+      t.push([x, y, 2]);
+  // Layer 3 — 3 × 2 = 6
+  for (const y of [6, 8])
+    for (const x of [6, 8, 10])
+      t.push([x, y, 3]);
+  // Layer 4 — 2 × 2 = 4
+  for (const y of [6, 8])
+    for (const x of [6, 8])
+      t.push([x, y, 4]);
+  return t; // 72 + 42 + 20 + 6 + 4 = 144
+})();
 
 // ---------------------------------------------------------------------------
 // PRNG
@@ -118,7 +122,9 @@ function shuffle<T>(arr: T[], rng: () => number): T[] {
 
 export function isTileFree(tile: Tile, allTiles: Tile[]): boolean {
   if (tile.state !== 'idle') return false;
-  const active = allTiles.filter((t) => t.state === 'idle' && t.id !== tile.id);
+  // Both 'idle' and 'selected' tiles are physically on the board and must block neighbours.
+  // Only 'matched' tiles have been removed.
+  const active = allTiles.filter((t) => t.state !== 'matched' && t.id !== tile.id);
 
   const hasAbove = active.some(
     (t) =>
@@ -140,6 +146,11 @@ export function isTileFree(tile: Tile, allTiles: Tile[]): boolean {
 export function hasAvailableMoves(tiles: Tile[]): boolean {
   const free = tiles.filter((t) => isTileFree(t, tiles));
   const seen = new Set<number>();
+
+  // A selected tile is still on the board — if a free tile shares its type, that IS a move.
+  const selectedTile = tiles.find((t) => t.state === 'selected');
+  if (selectedTile) seen.add(selectedTile.type);
+
   for (const t of free) {
     if (seen.has(t.type)) return true;
     seen.add(t.type);
@@ -231,15 +242,19 @@ function buildShuffledLayout(seed: number): Tile[] {
 const PRO_KEY = 'mahjong_flow_pro';
 
 export const useMahjongStore = create<MahjongState>((set, get) => ({
-  tiles:          [],
-  selectedId:     null,
-  gameMode:       'daily',
-  difficulty:     'easy',
-  elapsedSeconds: 0,
-  isComplete:     false,
-  isPro:          typeof window !== 'undefined' && localStorage.getItem(PRO_KEY) === '1',
-  history:        [],
-  hintedId:       null,
+  tiles:             [],
+  selectedId:        null,
+  gameMode:          'daily',
+  difficulty:        'easy',
+  skin:              'classic',
+  elapsedSeconds:    0,
+  isComplete:        false,
+  isPro:             typeof window !== 'undefined' && localStorage.getItem(PRO_KEY) === '1',
+  history:           [],
+  hintedId:          null,
+  sprintMode:        false,
+  sprintSecondsLeft: 180,
+  isFailed:          false,
 
   initBoard(mode: GameMode = get().gameMode ?? 'daily') {
     const { difficulty } = get();
@@ -253,11 +268,20 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
         ? buildShuffledLayout(seed)
         : buildSolvableLayout(seed, difficulty === 'medium' ? 18 : TILE_TYPE_COUNT);
 
-    set({ tiles, selectedId: null, gameMode: mode, elapsedSeconds: 0, isComplete: false, history: [], hintedId: null });
+    set({ tiles, selectedId: null, gameMode: mode, elapsedSeconds: 0, isComplete: false, history: [], hintedId: null, isFailed: false, sprintSecondsLeft: 180 });
   },
 
   tickSecond() {
-    if (!get().isComplete) set((s) => ({ elapsedSeconds: s.elapsedSeconds + 1 }));
+    const { isComplete, isFailed, sprintMode, sprintSecondsLeft } = get();
+    if (isComplete || isFailed) return;
+    set((s) => ({ elapsedSeconds: s.elapsedSeconds + 1 }));
+    if (sprintMode) {
+      if (sprintSecondsLeft <= 1) {
+        set({ sprintSecondsLeft: 0, isFailed: true });
+      } else {
+        set((s) => ({ sprintSecondsLeft: s.sprintSecondsLeft - 1 }));
+      }
+    }
   },
 
   selectTile(id: number) {
@@ -320,7 +344,7 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
 
   deactivatePro() {
     if (typeof window !== 'undefined') localStorage.removeItem(PRO_KEY);
-    set({ isPro: false, history: [] });
+    set({ isPro: false, skin: 'classic', history: [], sprintMode: false, isFailed: false, sprintSecondsLeft: 180 });
   },
 
   undoMove() {
@@ -341,16 +365,23 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
     get().initBoard(get().gameMode);
   },
 
+  setSkin(skin: Skin) { set({ skin }); },
+
   reshuffleRemaining() {
     const { tiles, difficulty } = get();
-    const idleTiles = tiles.filter((t) => t.state === 'idle');
+
+    // Treat 'selected' as 'idle' for the reshuffle — deselect before everything.
+    const normalised = tiles.map((t) =>
+      t.state === 'selected' ? { ...t, state: 'idle' as TileState } : t,
+    );
+    const idleTiles = normalised.filter((t) => t.state === 'idle');
     if (idleTiles.length < 2) return;
 
     // Mix Date.now with Math.random for enough entropy between rapid calls
     const rng = createRng((Date.now() ^ (Math.random() * 0xffffffff | 0)) >>> 0);
 
-    if (difficulty === 'hard') {
-      // Hard mode — pure shuffle, no solvability guarantee
+    // Helper: pure type-shuffle (hard mode and fallback)
+    const pureShuffle = () => {
       const types = idleTiles.map((t) => t.type);
       for (let i = types.length - 1; i > 0; i--) {
         const j = Math.floor(rng() * (i + 1));
@@ -358,17 +389,17 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
       }
       let idx = 0;
       set({
-        tiles: tiles.map((t) => (t.state === 'idle' ? { ...t, type: types[idx++] } : t)),
+        tiles: normalised.map((t) => (t.state === 'idle' ? { ...t, type: types[idx++] } : t)),
         selectedId: null,
-        hintedId: null,
+        hintedId:   null,
       });
-      return;
-    }
+    };
 
-    // Easy / Medium — solvable reshuffle using the same two-phase algorithm.
-    // isTileFree needs the full tile array (matched tiles still block positions),
-    // so we simulate on a copy of the full board.
-    let simTiles = tiles.map((t) => ({ ...t }));
+    if (difficulty === 'hard') { pureShuffle(); return; }
+
+    // Easy / Medium — two-phase solvable reshuffle.
+    // Use normalised so the selected tile is treated as idle in the simulation.
+    let simTiles = normalised.map((t) => ({ ...t }));
     const pairOrder: [number, number][] = [];
 
     while (true) {
@@ -383,7 +414,8 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
       );
     }
 
-    if (pairOrder.length === 0) return;
+    // If Phase 1 failed to find any pairs, fall back to pure shuffle
+    if (pairOrder.length === 0) { pureShuffle(); return; }
 
     // Assign types: cycle through type range so each type appears evenly
     const typeCount   = difficulty === 'medium' ? 18 : TILE_TYPE_COUNT;
@@ -402,7 +434,7 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
     });
 
     set({
-      tiles: tiles.map((t) =>
+      tiles: normalised.map((t) =>
         t.state === 'idle' && typeMap.has(t.id)
           ? { ...t, type: typeMap.get(t.id)! }
           : t,
@@ -436,5 +468,14 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
       }
     }
     // No free pairs available (deadlock) — do nothing
+  },
+
+  setGameMode(mode: GameMode) {
+    get().initBoard(mode);
+  },
+
+  setSprintMode(on: boolean) {
+    set({ sprintMode: on, sprintSecondsLeft: 180, isFailed: false });
+    if (on) get().initBoard('practice');
   },
 }));

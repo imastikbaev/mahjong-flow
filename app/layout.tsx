@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist } from 'next/font/google';
+import ThemeProvider from '@/components/ThemeProvider';
 import './globals.css';
 
 const geist = Geist({
@@ -15,9 +16,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // class="dark" forces class-based dark variants — app is dark-only
-    <html lang="en" className={`${geist.variable} h-full dark`}>
-      <body className="min-h-full flex flex-col antialiased">{children}</body>
+    <html lang="en" className={`${geist.variable} h-full`} suppressHydrationWarning>
+      <body className="min-h-full flex flex-col antialiased">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }
