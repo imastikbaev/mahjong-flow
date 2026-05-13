@@ -67,10 +67,9 @@ const SELECTED_SHADOW_DARK =
   '0 8px 30px rgba(0,0,0,0.6)';               // depth
 
 const SELECTED_SHADOW_LIGHT =
-  '0 0 0 2px rgba(234,179,8,0.95), ' +         // yellow-500 ring — vivid on white
-  '0 0 16px rgba(250,204,21,0.50), ' +          // neon glow
-  '0 0 32px rgba(250,204,21,0.18), ' +          // wide halo
-  '0 4px 12px rgba(0,0,0,0.10)';               // gentle depth
+  '0 0 0 2px rgba(234,179,8,0.70), ' +         // yellow ring, softer
+  '0 0 10px rgba(253,224,71,0.30), ' +          // light pastel glow
+  '0 4px 10px rgba(0,0,0,0.08)';               // gentle depth
 
 // ---------------------------------------------------------------------------
 // Component
