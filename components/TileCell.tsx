@@ -16,6 +16,25 @@ export const STEP_Y       = TILE_H / 2;
 export const LAYER_OFFSET = 4;
 
 // ---------------------------------------------------------------------------
+// Element glow — neon ring by suit for free Pro tiles
+// ---------------------------------------------------------------------------
+
+// rgba values matching GROUP_COLORS: emerald-400, blue-400, orange-500, slate-300
+const ELEMENT_GLOW_DARK = [
+  '0 0 0 1px rgba(52,211,153,0.45), 0 0 12px rgba(52,211,153,0.20)',   // Earth
+  '0 0 0 1px rgba(96,165,250,0.45), 0 0 12px rgba(96,165,250,0.20)',   // Water
+  '0 0 0 1px rgba(249,115,22,0.50), 0 0 12px rgba(249,115,22,0.22)',   // Fire
+  '0 0 0 1px rgba(203,213,225,0.35), 0 0 10px rgba(203,213,225,0.15)', // Air
+] as const;
+
+const ELEMENT_GLOW_LIGHT = [
+  '0 0 0 1.5px rgba(16,185,129,0.50), 0 0 10px rgba(16,185,129,0.15)',  // Earth
+  '0 0 0 1.5px rgba(59,130,246,0.50), 0 0 10px rgba(59,130,246,0.15)',  // Water
+  '0 0 0 1.5px rgba(234,88,12,0.50),  0 0 10px rgba(234,88,12,0.15)',   // Fire
+  '0 0 0 1.5px rgba(100,116,139,0.40), 0 0 8px rgba(100,116,139,0.12)', // Air
+] as const;
+
+// ---------------------------------------------------------------------------
 // Depth shadow — soft drop-shadow scales with z, no thick borders
 // ---------------------------------------------------------------------------
 
@@ -41,10 +60,15 @@ function depthShadow(z: number, dark: boolean): string {
   return shadows[Math.min(z, shadows.length - 1)];
 }
 
-const SELECTED_SHADOW =
-  '0 0 0 1.5px rgba(250,204,21,0.7), ' +   // amber-400 ring
-  '0 0 18px rgba(250,204,21,0.25), ' +       // outer amber glow
+const SELECTED_SHADOW_DARK =
+  '0 0 0 1.5px rgba(250,204,21,0.7), ' +
+  '0 0 18px rgba(250,204,21,0.25), ' +
   '0 8px 30px rgba(0,0,0,0.6)';
+
+const SELECTED_SHADOW_LIGHT =
+  '0 0 0 1.5px rgba(217,119,6,0.6), ' +   // amber-600 ring — readable on white
+  '0 0 12px rgba(251,191,36,0.20), ' +      // soft glow
+  '0 4px 12px rgba(0,0,0,0.10)';           // gentle depth
 
 // ---------------------------------------------------------------------------
 // Component
@@ -117,7 +141,15 @@ export default function TileCell({ tile, isFree, onClick, isPro = false, isHinte
             width:  TILE_W,
             height: TILE_H,
             zIndex,
-            boxShadow: isSelected ? SELECTED_SHADOW : depthShadow(tile.z, isDark),
+            boxShadow: (() => {
+              if (isSelected) return isDark ? SELECTED_SHADOW_DARK : SELECTED_SHADOW_LIGHT;
+              const depth = depthShadow(tile.z, isDark);
+              if (skin === 'pro' && isFree) {
+                const glow = isDark ? ELEMENT_GLOW_DARK[groupIndex] : ELEMENT_GLOW_LIGHT[groupIndex];
+                return `${glow}, ${depth}`;
+              }
+              return depth;
+            })(),
             animation: isHinted ? 'hint-pulse 1.2s ease-in-out infinite' : undefined,
           }}
           disabled={!isFree}
@@ -134,7 +166,9 @@ export default function TileCell({ tile, isFree, onClick, isPro = false, isHinte
 
             // ── Surface ────────────────────────────────────────────────────
             isSelected
-              ? 'bg-yellow-400/[0.12] border-yellow-400/[0.6]'
+              ? isDark
+                ? 'bg-yellow-400/[0.12] border-yellow-400/[0.6]'
+                : 'bg-amber-100 border-amber-400'
               : useElementTint
               ? ELEMENT_SURFACE_LIGHT[groupIndex]
               : isPro
