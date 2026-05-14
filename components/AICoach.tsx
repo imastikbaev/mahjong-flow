@@ -112,13 +112,13 @@ export default function AICoach() {
   return (
     <aside className="
       w-full max-w-sm
-      bg-white/[0.03] backdrop-blur-sm
-      rounded-xl border border-white/[0.07]
+      bg-white dark:bg-white/[0.03] backdrop-blur-sm
+      rounded-xl border border-black/[0.07] dark:border-white/[0.07]
       overflow-hidden
     ">
       {/* Header */}
-      <div className="px-5 pt-5 pb-4 border-b border-white/[0.06]">
-        <p className="text-[9px] uppercase tracking-[0.14em] text-neutral-600 font-normal mb-1">
+      <div className="px-5 pt-5 pb-4 border-b border-black/[0.06] dark:border-white/[0.06]">
+        <p className="text-[9px] uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-600 font-normal mb-1">
           AI Coach
         </p>
         <p className="text-xs font-light text-neutral-500 tracking-tight">
@@ -129,7 +129,7 @@ export default function AICoach() {
       {/* Tips */}
       <div className="px-4 py-3 space-y-2.5">
         {tips.length === 0 && (
-          <p className="text-xs font-light text-neutral-700 py-4 text-center">
+          <p className="text-xs font-light text-neutral-400 dark:text-neutral-700 py-4 text-center">
             Start a game to see analysis
           </p>
         )}
@@ -138,13 +138,13 @@ export default function AICoach() {
             <span
               className={`mt-0.5 text-xs shrink-0 ${
                 tip.priority === 'warn' ? 'text-amber-500' :
-                tip.priority === 'good' ? 'text-emerald-400' :
-                'text-neutral-600'
+                tip.priority === 'good' ? 'text-emerald-500 dark:text-emerald-400' :
+                'text-neutral-400 dark:text-neutral-600'
               }`}
             >
               {tip.priority === 'warn' ? '⚠' : tip.priority === 'good' ? '✦' : '◎'}
             </span>
-            <p className="text-xs font-light text-neutral-400 tracking-tight leading-relaxed">
+            <p className="text-xs font-light text-neutral-600 dark:text-neutral-400 tracking-tight leading-relaxed">
               {tip.text}
             </p>
           </div>

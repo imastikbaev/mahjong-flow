@@ -132,11 +132,12 @@ export default function Home() {
         <button
           onClick={() => setShowCoach((v) => !v)}
           className="
-            px-4 py-2 rounded-full
-            bg-[#0e0e0e]/90 backdrop-blur-sm
-            border border-white/[0.1] hover:border-white/[0.18]
+            px-4 py-2 rounded-full backdrop-blur-sm
+            bg-white/90 dark:bg-[#0e0e0e]/90
+            border border-black/[0.1] dark:border-white/[0.1]
+            hover:border-black/[0.18] dark:hover:border-white/[0.18]
             text-xs font-normal tracking-tight
-            text-neutral-500 hover:text-neutral-200
+            text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200
             transition-all duration-200 active:scale-95
           "
           aria-label={showCoach ? 'Hide AI coach' : 'Show AI coach'}
@@ -146,11 +147,12 @@ export default function Home() {
         <button
           onClick={() => setShowLeaderboard((v) => !v)}
           className="
-            px-4 py-2 rounded-full
-            bg-[#0e0e0e]/90 backdrop-blur-sm
-            border border-white/[0.1] hover:border-white/[0.18]
+            px-4 py-2 rounded-full backdrop-blur-sm
+            bg-white/90 dark:bg-[#0e0e0e]/90
+            border border-black/[0.1] dark:border-white/[0.1]
+            hover:border-black/[0.18] dark:hover:border-white/[0.18]
             text-xs font-normal tracking-tight
-            text-neutral-500 hover:text-neutral-200
+            text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200
             transition-all duration-200 active:scale-95
           "
           aria-label={showLeaderboard ? 'Hide leaderboard' : 'Show leaderboard'}
