@@ -1,10 +1,34 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient }                      from '@/lib/supabase/client';
 import { QUESTS, getExpiresAt, type QuestDef } from '@/lib/quests';
-import type { User } from '@supabase/supabase-js';
+import type { User }                         from '@supabase/supabase-js';
 
+// ---------------------------------------------------------------------------
+// DB row type — mirrors the quests_progress SQL schema exactly.
+// ---------------------------------------------------------------------------
+
+interface DbQuestProgress {
+  id:            string;
+  user_id:       string;
+  quest_id:      string;
+  target_value:  number;
+  current_value: number;
+  expires_at:    string;
+  is_completed:  boolean;
+  created_at:    string;
+  updated_at:    string;
+}
+
+// RPC return shape for increment_quest_progress()
+interface RpcIncrementResult {
+  current_value: number;
+  is_completed:  boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Public interface
 // ---------------------------------------------------------------------------
 
 export interface QuestProgress extends QuestDef {
@@ -18,9 +42,10 @@ export interface QuestProgress extends QuestDef {
 export function useQuests(user: User | null | undefined) {
   const [quests, setQuests] = useState<QuestProgress[]>([]);
 
-  // Ensure a row exists for every quest, bootstrapping expired ones.
+  // ── Sync: ensure a fresh row exists for every quest definition ────────────
   const syncQuests = useCallback(async () => {
     if (!user) { setQuests([]); return; }
+
     const supabase = createClient();
 
     const { data: rows } = await supabase
@@ -28,47 +53,51 @@ export function useQuests(user: User | null | undefined) {
       .select('*')
       .eq('user_id', user.id);
 
-    const existing = new Map((rows ?? []).map((r: Record<string,unknown>) => [r.quest_id as string, r]));
-    const now      = new Date().toISOString();
+    const existing = new Map(
+      (rows as DbQuestProgress[] ?? []).map((r) => [r.quest_id, r]),
+    );
 
-    const upserts = QUESTS.map((q) => {
-      const row = existing.get(q.id);
-      // Row missing or expired → reset
-      if (!row || (row.expires_at as string) < now) {
-        return {
-          user_id:       user.id,
-          quest_id:      q.id,
-          target_value:  q.target,
-          current_value: 0,
-          expires_at:    getExpiresAt(q.period),
-          is_completed:  false,
-        };
-      }
-      return null;
-    }).filter((x): x is NonNullable<typeof x> => x !== null);
+    const now = new Date().toISOString();
+
+    // Build upsert list: rows that are missing or have expired.
+    const upserts = QUESTS
+      .filter((q) => {
+        const row = existing.get(q.id);
+        return !row || row.expires_at < now;
+      })
+      .map((q) => ({
+        user_id:       user.id,
+        quest_id:      q.id,
+        target_value:  q.target,
+        current_value: 0,
+        expires_at:    getExpiresAt(q.period),
+        is_completed:  false,
+      }));
 
     if (upserts.length > 0) {
-      await supabase.from('quests_progress').upsert(upserts, {
-        onConflict: 'user_id,quest_id',
-      });
+      await supabase
+        .from('quests_progress')
+        .upsert(upserts, { onConflict: 'user_id,quest_id' });
     }
 
-    // Re-fetch merged state
+    // Re-fetch the merged state after upsert.
     const { data: fresh } = await supabase
       .from('quests_progress')
       .select('*')
       .eq('user_id', user.id);
 
-    const freshMap = new Map((fresh ?? []).map((r: Record<string,unknown>) => [r.quest_id as string, r]));
+    const freshMap = new Map(
+      (fresh as DbQuestProgress[] ?? []).map((r) => [r.quest_id, r]),
+    );
 
     setQuests(
       QUESTS.map((q) => {
         const row = freshMap.get(q.id);
         return {
           ...q,
-          currentValue: Number(row?.current_value ?? 0),
-          isCompleted:  Boolean(row?.is_completed ?? false),
-          expiresAt:    String(row?.expires_at ?? getExpiresAt(q.period)),
+          currentValue: row?.current_value  ?? 0,
+          isCompleted:  row?.is_completed   ?? false,
+          expiresAt:    row?.expires_at     ?? getExpiresAt(q.period),
         };
       }),
     );
@@ -76,35 +105,35 @@ export function useQuests(user: User | null | undefined) {
 
   useEffect(() => { syncQuests(); }, [syncQuests]);
 
-  // Call this from game events (pair cleared, game won, etc.)
+  // ── Update: atomic increment via PL/pgSQL function ────────────────────────
+  //
+  // Replaces the previous read-then-write pattern.
+  // increment_quest_progress() acquires a row-level lock (FOR UPDATE) inside
+  // a single transaction, so concurrent game events cannot interleave and
+  // produce double-increments or lost writes.
   const updateProgress = useCallback(
     async (questId: string, amount: number) => {
       if (!user) return;
+
       const supabase = createClient();
-      const def = QUESTS.find((q) => q.id === questId);
-      if (!def) return;
 
-      const { data: row } = await supabase
-        .from('quests_progress')
-        .select('current_value, is_completed, target_value')
-        .eq('user_id', user.id)
-        .eq('quest_id', questId)
-        .single();
+      const { data } = await supabase.rpc('increment_quest_progress', {
+        u_id:    user.id,
+        q_id:    questId,
+        inc_val: amount,
+      });
 
-      if (!row || row.is_completed) return;
+      // RPC returns an empty array when the row is missing or already complete.
+      if (!data || (data as RpcIncrementResult[]).length === 0) return;
 
-      const newValue = Math.min(Number(row.current_value) + amount, Number(row.target_value));
-      const isDone   = newValue >= Number(row.target_value);
+      const { current_value, is_completed } = (data as RpcIncrementResult[])[0];
 
-      await supabase
-        .from('quests_progress')
-        .update({ current_value: newValue, is_completed: isDone })
-        .eq('user_id', user.id)
-        .eq('quest_id', questId);
-
+      // Optimistic local update — no extra network round-trip needed.
       setQuests((prev) =>
         prev.map((q) =>
-          q.id === questId ? { ...q, currentValue: newValue, isCompleted: isDone } : q,
+          q.id === questId
+            ? { ...q, currentValue: current_value, isCompleted: is_completed }
+            : q,
         ),
       );
     },

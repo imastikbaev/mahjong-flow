@@ -65,7 +65,6 @@ export function useSubmitScore(): UseSubmitScoreResult {
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit score.');
-      console.error('[useSubmitScore]', err);
     } finally {
       setSubmitting(false);
     }

@@ -1,20 +1,8 @@
 <div align="center">
 
-<br />
-
 # Mahjong Flow
 
-**A cognitive focus tool built as a 3D Mahjong Solitaire puzzle.**  
-Structured play over passive scrolling. Flow state over frustration.
-
-<br />
-
-<img src="demo.gif" width="720" alt="Mahjong Flow demo" />
-
-### 🚀 **[Play Live Demo on Vercel](2stage.vercel.app)**
-🧠 **[AI Coach Backend API](https://your-python-backend.onrender.com/docs)**
-
-<br />
+**[Live Demo](https://2stage.vercel.app)** &nbsp;·&nbsp; **[AI Coach API](https://your-python-backend.onrender.com/docs)**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.2-black?style=flat-square)](https://nextjs.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-06B6D4?style=flat-square)](https://tailwindcss.com)
@@ -25,125 +13,144 @@ Structured play over passive scrolling. Flow state over frustration.
 
 ---
 
-## The Philosophy
+## Table of Contents
 
-Most games are designed to extend session time. Mahjong Flow is designed to end it — with the user feeling calm and sharp, not depleted.
-
-The 144-tile board is a bounded problem space. Every move has consequence. There is no randomness after the deal, no timers forcing panic, no notifications. The brain enters a narrow-focus state researchers call *flow* — the same state experienced during deep work.
-
-This is the niche: **cognitive recovery through structured play**, positioned as a digital detox tool rather than entertainment.
+1. [Abstract](#abstract)
+2. [Core Philosophy](#core-philosophy)
+3. [Architecture](#architecture)
+4. [Key Engineering Solutions](#key-engineering-solutions)
+5. [Business Logic](#business-logic)
+6. [Tech Stack](#tech-stack)
+7. [Installation](#installation)
+8. [Database](#database)
+9. [Environment Variables](#environment-variables)
 
 ---
 
-## Features
+## Abstract
 
-### Freemium Skin System — a UX-driven business model
+Mahjong Flow is a 3D Mahjong Solitaire implementation built as a cognitive focus tool. The board engine operates on a coordinate-based tile graph; freedom is evaluated geometrically per tile in O(n) time. A FastAPI microservice runs a heuristic dead-end probability model on every board state and returns ranked advice. Supabase provides persistent auth, a global leaderboard, and a quest-progress store with atomic increment via PL/pgSQL.
 
-| Tier | Skin | Symbol type | Cognitive load |
-|------|------|-------------|----------------|
-| Free | Classic | Unicode Mahjong glyphs (🀙 🀐 🀇) | Higher — character recognition required |
-| Pro  | Elemental | Lucide icon system (Earth / Water / Fire / Air) | Lower — abstract shapes induce flow faster |
+---
 
-The free tier is fully functional. The upgrade sells a measurably better experience, not locked features.
+## Core Philosophy
 
-### AI Coach
+A 144-tile Turtle layout is a bounded, deterministic problem space. Every move has a traceable consequence; there is no randomness after the deal. The brain operating on a problem with this property enters narrow-focus — the same cognitive state as deep work.
 
-A real-time board analysis engine that runs on every state change:
-
-- Counts available free pairs and warns when < 2 remain
-- Detects isolated tile types whose match is buried beneath other layers
-- Calculates which single move unlocks the most blocked tiles
-- Identifies when the top layer is fully clear (highest-value moment to act)
-
-The coach surfaces tips without interrupting play — no modal popups, no forced pauses.
-
-### Daily Challenge + Global Leaderboard
-
-Every player worldwide receives the same seeded board each day. Scores are ranked globally and by city. The seed is derived deterministically from the date — no server call required to generate the board.
-
-### Auth — Email & Google Sign-in
-
-Players can create an account with email + password or continue with Google OAuth. Authentication is powered by Supabase Auth:
-
-- On first sign-up a database trigger automatically creates a matching row in `public.users`
-- Sessions persist across tabs via a cookie-refreshing middleware
-- The game is fully playable without an account — auth unlocks quest tracking and cross-device streaks
-
-### Quest Engine
-
-Six time-boxed quests reset automatically based on UTC time — no cron job required:
-
-| Period | Quest | Goal |
-|--------|-------|------|
-| Daily  | Daily Challenger | Complete 1 Daily Challenge |
-| Daily  | Sprint Session | Play 3 Sprint matches |
-| Daily  | Pair Streak | Clear 50 pairs in any mode |
-| Weekly | Flow State | Score 8 000+ in one game |
-| Weekly | Tile Master | Clear 500 pairs total |
-| Weekly | Committed | Complete the Daily 7 days in a row |
-
-Progress is stored in `quests_progress` (Supabase, RLS-protected). Expired quests are detected client-side by comparing `expires_at` to `now()` and upserted fresh on the next sync — zero scheduled jobs.
-
-### Sprint Mode *(Pro)*
-
-Three minutes. Clear as many pairs as possible. Score = `pairs × 100 + remaining_seconds × 10`. The timer turns red at 30 seconds.
-
-### Focus Analytics *(Pro)*
-
-A 7-day bar chart of solving times, best time, average time, and daily streak — stored locally via `localStorage`, no account required.
-
-### Board Guarantee
-
-Easy and Medium difficulties use a two-phase solvable generator: Phase 1 simulates a full solve to determine a valid removal order; Phase 2 assigns tile types along that path. The board is always winnable.
+The product is positioned as a structured alternative to passive consumption, not as entertainment. The design principle that follows: a session should end with the user feeling clearheaded, not depleted. There are no push notifications, no infinite scroll, no variable reward loops. The timer exists to measure the user, not pressure them.
 
 ---
 
 ## Architecture
 
 ```
-mahjong-flow/
-├── app/                    # Next.js 16 App Router
-│   ├── page.tsx            # Root client page — game state orchestration
-│   └── layout.tsx          # Theme provider, fonts
-├── components/
-│   ├── MahjongBoard.tsx    # Auto-scaling canvas with ResizeObserver
-│   ├── TileCell.tsx        # Framer Motion tile — glassmorphism surface
-│   ├── AICoach.tsx         # Board analysis panel
-│   ├── TopBar.tsx          # Mode toggle, sprint, difficulty, skin
-│   ├── Leaderboard.tsx     # Global / city-scoped score table
-│   ├── FocusStats.tsx      # 7-day analytics chart
-│   └── WinModal.tsx        # Result screen (win + sprint timeout)
-├── store/
-│   └── mahjongStore.ts     # Zustand — tiles, game modes, sprint, skins
-└── lib/
-    ├── hooks/
-    │   ├── useGameHistory.ts   # localStorage-backed session history
-    │   ├── useLeaderboard.ts   # Supabase leaderboard queries
-    │   └── useSubmitScore.ts   # Score upsert with user profile sync
-    └── supabaseClient.ts
+Browser (Next.js 16 App Router)
+  │
+  ├── Zustand store          tile graph, game mode, sprint, skin, history
+  ├── React components       board, modals, sidebar panels, FABs
+  ├── @supabase/ssr client   auth session, leaderboard upsert, quest RPC
+  │
+  ├── /auth/callback         route handler: exchanges OAuth code for session cookie
+  └── middleware.ts          refreshes Supabase session cookie on every request
+
+Supabase (PostgreSQL + PostgREST + Auth)
+  │
+  ├── auth.users             managed by Supabase Auth
+  ├── public.users           synced via handle_new_user() trigger on INSERT
+  ├── public.leaderboard     personal-best upsert (user_id, date, type)
+  └── public.quests_progress atomic increment via increment_quest_progress() RPC
+
+FastAPI (Python 3.11+)
+  │
+  ├── BoardAnalyzer          mirrors isTileFree() logic from the TypeScript store
+  ├── HeuristicPredictor     weighted sigmoid over 8 board features
+  └── /api/analyze-board     stateless: client sends full tile array on every call
 ```
 
-### Board engine
-
-The 144-tile Turtle layout is hardcoded as `[x, y, z]` coordinates. Tile freedom is determined geometrically — a tile is free when nothing covers it from above (`z+1`, within ±1 unit on both axes) and at least one horizontal side is open. This check runs in O(n) per tile.
-
-### Supabase schema
-
-Three tables:
-
-- **`users`** — `(uuid, nickname, city, is_pro)`. Populated automatically by a `handle_new_user()` trigger on `auth.users` INSERT. Anonymous players generate a stable UUID in localStorage; signed-in players use their Supabase auth UUID.
-- **`leaderboard`** — `(user_id, date, score, time_seconds, type)`. Scores are upserted with a unique constraint on `(user_id, date, type)` — only the personal best survives.
-- **`quests_progress`** — `(user_id, quest_id, current_value, target_value, expires_at, is_completed)`. RLS policy restricts every row to its owner (`auth.uid() = user_id`). Expired quests are reset client-side and re-upserted; no server cron needed.
-
-### Auth flow
+Auth flow:
 
 ```
-Browser → supabase.auth.signInWithOAuth / signInWithPassword
-       → Supabase redirects to /auth/callback
-       → route.ts exchanges code for session cookie
-       → middleware.ts refreshes cookie on every subsequent request
-       → useAuthUser() mirrors session state via onAuthStateChange
+signInWithOAuth / signInWithPassword
+  → Supabase redirects to /auth/callback
+  → route.ts: exchangeCodeForSession()
+  → session cookie set
+  → middleware.ts refreshes cookie on every subsequent request
+  → useAuthUser(): onAuthStateChange mirrors live session state
 ```
+
+---
+
+## Key Engineering Solutions
+
+### 1. Coordinate-based tile freedom engine
+
+Tile freedom is computed geometrically without a graph traversal. A tile at `(x, y, z)` is free when:
+
+- No tile occupies `z+1` within `±1` unit on both x and y axes (nothing above).
+- At least one of `(x-2, y, z)` or `(x+2, y, z)` is unoccupied (one lateral side open).
+
+This check runs in O(n) per tile against the active tile list. The Python microservice mirrors the identical predicate so board analysis and browser state are always in agreement.
+
+### 2. Heuristic dead-end probability model
+
+`HeuristicPredictor` computes a weighted linear combination of eight features extracted from the board state, then passes the result through a sigmoid:
+
+| Feature | Weight | Rationale |
+|---------|--------|-----------|
+| `1 - mobility` | 2.5 | Low move variety is the strongest leading indicator of a dead end |
+| `isolation_ratio` | 2.0 | Types with one free tile and a buried partner approach irreversibility |
+| `1 - free_ratio` | 1.5 | Dense coverage reduces future options nonlinearly |
+| `mean_burial_depth` | 0.8 | Lagging indicator of overall board openness |
+| Zero pairs (hard penalty) | 3.0 | Board is already stuck |
+
+The architecture uses a `Predictor` ABC. Swapping in a trained CatBoost model requires implementing one method (`predict(features) -> float`) and no changes to the endpoint.
+
+### 3. Atomic quest progression via PL/pgSQL
+
+The client previously read `current_value`, incremented it, then wrote back — a classic TOCTOU race when two game events fire within the same request cycle. The replacement is a server-side function:
+
+```sql
+create or replace function public.increment_quest_progress(
+  u_id uuid, q_id text, inc_val int
+)
+returns table (current_value int, is_completed boolean)
+language plpgsql security definer as $$
+declare
+  _row  public.quests_progress%rowtype;
+  _new  int;
+begin
+  select * into _row from public.quests_progress
+  where user_id = u_id and quest_id = q_id
+  for update;                          -- row-level lock for duration of txn
+
+  if not found or _row.is_completed then return; end if;
+
+  _new := least(_row.current_value + inc_val, _row.target_value);
+
+  update public.quests_progress
+  set current_value = _new, is_completed = (_new >= _row.target_value)
+  where user_id = u_id and quest_id = q_id;
+
+  return query select _new, (_new >= _row.target_value);
+end; $$;
+```
+
+The browser calls `supabase.rpc('increment_quest_progress', { ... })` — one network round-trip, no race condition possible.
+
+---
+
+## Business Logic
+
+The freemium model is UI-driven: the upgrade sells a measurably better cognitive experience rather than locked features.
+
+| Tier | Skin | Symbol system | Cognitive load |
+|------|------|---------------|----------------|
+| Free | Classic | Unicode Mahjong glyphs (🀙 🀐 🀇) | Higher — character recognition required |
+| Pro | Elemental | Lucide icon system (Earth / Water / Fire / Air) | Lower — abstract shapes reduce visual parsing time |
+
+The free tier is fully playable. Pro additionally unlocks Undo, Sprint mode, and the AI Coach panel. The AI Coach is gated at the UI level: the sidebar panel renders only when `isPro === true`; the FAB offers an upgrade prompt otherwise.
+
+Quest progress and leaderboard participation require a free account (email/password or Google OAuth). Anonymous play stores state in `localStorage` only.
 
 ---
 
@@ -158,49 +165,42 @@ Browser → supabase.auth.signInWithOAuth / signInWithPassword
 | Icons | lucide-react |
 | Auth | Supabase Auth (email/password + Google OAuth) |
 | Database | Supabase (PostgreSQL via PostgREST + RLS) |
+| AI Backend | FastAPI + Python 3.11, uvicorn |
 | Fonts | Geist (variable, `next/font`) |
-| Deployment | Vercel |
+| Deployment | Vercel (frontend), Render / Railway (AI backend) |
 
 ---
 
-## Quick Start
-
-### Prerequisites
-
-- Node.js 20+
-- A Supabase project with the schema below applied
-
-### Frontend
+## Installation
 
 ```bash
-git clone https://github.com/your-org/mahjong-flow
+git clone https://github.com/imastikbaev/mahjong-flow
 cd mahjong-flow
 npm install
-
-# Set environment variables
-cp .env.example .env.local
-# NEXT_PUBLIC_SUPABASE_URL=...
-# NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-
+cp .env.local.example .env.local   # fill in Supabase + AI URL
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-### Database
-
-Apply the full migration in one step:
+AI backend:
 
 ```bash
-# Paste the file contents into Supabase Dashboard → SQL Editor → Run
-supabase/migrations/auth_and_quests.sql
+cd ai-coach
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
 ```
 
-The migration creates:
-- `public.users` with `handle_new_user()` trigger syncing from `auth.users`
-- `public.leaderboard` with unique personal-best constraint
-- `public.quests_progress` with RLS (`auth.uid() = user_id`) and auto `updated_at` trigger
-- Open RLS policies on `users` and `leaderboard` for anonymous score submission
+---
+
+## Database
+
+Apply migrations in order via Supabase Dashboard → SQL Editor:
+
+```
+supabase/migrations/auth_and_quests.sql          -- users trigger, quests_progress, RLS
+supabase/migrations/increment_quest_progress.sql -- atomic RPC function
+```
+
+The migrations are idempotent (`create or replace`, `drop trigger if exists`, `create table if not exists`).
 
 ---
 
@@ -208,18 +208,18 @@ The migration creates:
 
 | Variable | Description |
 |----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (public-safe) |
-| `NEXT_PUBLIC_AI_URL` | AI Coach FastAPI backend URL (use `http://127.0.0.1:8000` locally) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (Settings → API) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key — public-safe |
+| `NEXT_PUBLIC_AI_URL` | AI Coach base URL. Use `http://127.0.0.1:8000` locally |
 
 ### Supabase Dashboard checklist
 
-| Step | Where |
-|------|-------|
-| Run migration SQL | SQL Editor → paste `supabase/migrations/auth_and_quests.sql` → Run |
-| Enable Email auth | Authentication → Providers → Email |
-| Enable Google OAuth | Authentication → Providers → Google → add Client ID + Secret |
-| Add redirect URL | Authentication → URL Configuration → add `https://your-domain/auth/callback` |
+| Step | Location |
+|------|----------|
+| Run both SQL migrations | SQL Editor |
+| Enable Email provider | Authentication → Providers → Email |
+| Enable Google OAuth | Authentication → Providers → Google |
+| Add redirect URL | Authentication → URL Configuration → `https://<domain>/auth/callback` |
 
 ---
 
