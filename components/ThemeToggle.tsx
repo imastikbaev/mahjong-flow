@@ -4,12 +4,6 @@ import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-// View Transitions API — not yet in all TS lib typings
-declare global {
-  interface Document {
-    startViewTransition?: (cb: () => void) => { ready: Promise<void>; finished: Promise<void> };
-  }
-}
 
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -22,11 +16,13 @@ export default function ThemeToggle() {
 
   function toggleTheme() {
     const next = isDark ? 'light' : 'dark';
-    if (!document.startViewTransition) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const vt = (document as any).startViewTransition;
+    if (typeof vt === 'function') {
+      vt(() => setTheme(next));
+    } else {
       setTheme(next);
-      return;
     }
-    document.startViewTransition(() => setTheme(next));
   }
 
   return (
