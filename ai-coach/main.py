@@ -443,9 +443,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://your-production-domain.com"],
-    allow_methods=["POST"],
-    allow_headers=["Content-Type"],
+    allow_origins=["*"],      # hackathon prototype — tighten before prod
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Single shared predictor instance — swap class to upgrade to CatBoost.

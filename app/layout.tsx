@@ -10,8 +10,27 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: 'Mahjong Flow',
-  description: 'A minimalist Mahjong Solitaire for digital detox and cognitive flow.',
+  metadataBase: new URL('https://2stage.vercel.app'),
+  title: 'Mahjong Flow | Cognitive Focus & Digital Detox',
+  description:
+    'A premium, AI-powered 3D Mahjong Solitaire designed for cognitive focus, deep flow states, and digital detox.',
+  openGraph: {
+    title: 'Mahjong Flow | Cognitive Focus & Digital Detox',
+    description:
+      'A premium, AI-powered 3D Mahjong Solitaire designed for cognitive focus, deep flow states, and digital detox.',
+    url: 'https://2stage.vercel.app',
+    siteName: 'Mahjong Flow',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Mahjong Flow' }],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Mahjong Flow | Cognitive Focus & Digital Detox',
+    description:
+      'A premium, AI-powered 3D Mahjong Solitaire designed for cognitive focus, deep flow states, and digital detox.',
+    images: ['/og-image.jpg'],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
