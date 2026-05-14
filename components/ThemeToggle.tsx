@@ -14,20 +14,9 @@ export default function ThemeToggle() {
 
   const isDark = theme === 'dark';
 
-  function toggleTheme() {
-    const next = isDark ? 'light' : 'dark';
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const vt = (document as any).startViewTransition;
-    if (typeof vt === 'function') {
-      vt(() => setTheme(next));
-    } else {
-      setTheme(next);
-    }
-  }
-
   return (
     <button
-      onClick={toggleTheme}
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       className={[
         'w-8 h-8 flex items-center justify-center rounded-md',

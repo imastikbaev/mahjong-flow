@@ -34,29 +34,10 @@ body {
   font-family: var(--font-sans, system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-}
-
-/*
-  Smooth theme transition via View Transitions API.
-  The browser snapshots the full page before/after the .dark class swap
-  and cross-fades the two snapshots — no per-element transitions needed,
-  no conflict with Framer Motion.
-  ThemeToggle.tsx wraps setTheme() in document.startViewTransition().
-*/
-::view-transition-old(root) {
-  animation: 300ms ease both vt-fade-out;
-}
-::view-transition-new(root) {
-  animation: 300ms ease both vt-fade-in;
-}
-
-@keyframes vt-fade-out {
-  from { opacity: 1; filter: blur(0px);   }
-  to   { opacity: 0; filter: blur(3px);   }
-}
-@keyframes vt-fade-in {
-  from { opacity: 0; filter: blur(3px);   }
-  to   { opacity: 1; filter: blur(0px);   }
+  /* Smooth background/text crossfade on theme switch — safe, no Framer Motion conflict */
+  transition-property: color, background-color;
+  transition-duration: 500ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Hint tile pulse — neon violet, visible on both light and dark backgrounds */
