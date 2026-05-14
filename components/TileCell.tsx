@@ -209,7 +209,7 @@ export default function TileCell({ tile, isFree, onClick, isPro = false, isHinte
               </span>
               <IconComponent
                 size={20 + level * 0.8}
-                className={`select-none ${isSelected ? 'text-yellow-300' : themeColor}`}
+                className={`select-none ${isSelected ? 'text-yellow-700 dark:text-yellow-300' : themeColor}`}
                 strokeWidth={1.5}
               />
             </>

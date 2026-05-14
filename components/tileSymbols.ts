@@ -67,10 +67,10 @@ export const TILE_ICONS = TILE_GROUPS.flat();
  * Applied to the icon's className so Tailwind includes the utility.
  */
 export const GROUP_COLORS = [
-  'text-emerald-400', // Earth
-  'text-blue-400',    // Water
-  'text-orange-500',  // Fire
-  'text-slate-300',   // Air
+  'text-emerald-600 dark:text-emerald-400', // Earth
+  'text-blue-600 dark:text-blue-400',       // Water
+  'text-orange-600 dark:text-orange-500',   // Fire
+  'text-slate-500 dark:text-slate-300',     // Air
 ] as const;
 
 // ---------------------------------------------------------------------------

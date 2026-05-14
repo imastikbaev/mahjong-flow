@@ -67,10 +67,10 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
       {isPro ? (
         /* ── Pro active screen ─────────────────────────────────────── */
         <>
-          <div className="relative px-6 pt-7 pb-5 border-b border-white/[0.06] bg-[#111111]">
+          <div className="relative px-6 pt-7 pb-5 border-b border-black/[0.06] dark:border-white/[0.06] bg-neutral-50 dark:bg-[#111111]">
             <button
               onClick={onClose}
-              className="absolute top-4 right-5 text-neutral-600 hover:text-neutral-300
+              className="absolute top-4 right-5 text-neutral-500 dark:text-neutral-600 hover:text-neutral-900 dark:hover:text-neutral-300
                          transition-colors duration-150 text-base leading-none"
               aria-label="Close"
             >
@@ -79,17 +79,17 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
             <p className="text-[10px] uppercase tracking-[0.14em] text-neutral-600 font-normal mb-2">
               Flow Pro
             </p>
-            <h2 className="text-xl font-light tracking-tight text-neutral-100">
+            <h2 className="text-xl font-light tracking-tight text-neutral-900 dark:text-neutral-100">
               You are in flow.
             </h2>
-            <p className="mt-1 text-sm font-light text-neutral-500 tracking-tight">
+            <p className="mt-1 text-sm font-light text-neutral-600 dark:text-neutral-500 tracking-tight">
               All Pro features are active.
             </p>
           </div>
 
-          <div className="px-6 py-5 space-y-5 bg-[#0e0e0e]">
+          <div className="px-6 py-5 space-y-5 bg-white dark:bg-[#0e0e0e]">
             {/* Unlocked FocusStats */}
-            <div className="rounded-lg border border-white/[0.06] p-4 bg-white/[0.02]">
+            <div className="rounded-lg border border-black/[0.06] dark:border-white/[0.06] p-4 bg-black/[0.02] dark:bg-white/[0.02]">
               <FocusStats locked={false} gameHistory={gameHistory} />
             </div>
 
@@ -98,7 +98,7 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
               {BENEFITS.map((b) => (
                 <li key={b.title} className="flex items-center gap-3">
                   <span className="text-xs text-neutral-400 shrink-0">✓</span>
-                  <p className="text-sm font-normal tracking-tight text-neutral-400">{b.title}</p>
+                  <p className="text-sm font-normal tracking-tight text-neutral-700 dark:text-neutral-300">{b.title}</p>
                 </li>
               ))}
             </ul>
@@ -107,8 +107,9 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
               onClick={onClose}
               className="
                 w-full py-2.5 rounded-lg text-sm font-normal tracking-tight
-                bg-white hover:bg-neutral-100 active:bg-neutral-200
-                text-[#0a0a0a] transition-colors duration-150
+                bg-neutral-900 text-white hover:bg-neutral-800
+                dark:bg-white dark:text-[#0a0a0a] dark:hover:bg-neutral-100
+                active:bg-neutral-200 transition-colors duration-150
               "
             >
               Continue playing
@@ -117,7 +118,7 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
             {/* Dev-only reset — intentionally unobtrusive */}
             <button
               onClick={deactivatePro}
-              className="mx-auto block text-[10px] text-neutral-800 hover:text-neutral-600
+              className="mx-auto block text-[10px] text-neutral-400 hover:text-neutral-600
                          transition-colors duration-150 tracking-tight"
             >
               reset demo
@@ -127,10 +128,10 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
       ) : (
         /* ── Upsell screen ─────────────────────────────────────────── */
         <>
-          <div className="relative px-6 pt-7 pb-5 border-b border-white/[0.06] bg-[#111111]">
+          <div className="relative px-6 pt-7 pb-5 border-b border-black/[0.06] dark:border-white/[0.06] bg-neutral-50 dark:bg-[#111111]">
             <button
               onClick={onClose}
-              className="absolute top-4 right-5 text-neutral-600 hover:text-neutral-300
+              className="absolute top-4 right-5 text-neutral-500 dark:text-neutral-600 hover:text-neutral-900 dark:hover:text-neutral-300
                          transition-colors duration-150 text-base leading-none"
               aria-label="Close"
             >
@@ -140,30 +141,30 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
             <p className="text-[10px] uppercase tracking-[0.14em] text-neutral-600 font-normal mb-2">
               Flow Pro
             </p>
-            <h2 className="text-xl font-light tracking-tight text-neutral-100">
+            <h2 className="text-xl font-light tracking-tight text-neutral-900 dark:text-neutral-100">
               Enter deeper flow.
             </h2>
-            <p className="mt-1 text-sm font-light text-neutral-500 tracking-tight">
+            <p className="mt-1 text-sm font-light text-neutral-600 dark:text-neutral-500 tracking-tight">
               Unlock the full Mahjong Flow experience.
             </p>
 
             <div className="mt-4 flex items-baseline gap-1.5">
-              <span className="text-2xl font-normal tracking-tight text-neutral-100">$4</span>
+              <span className="text-2xl font-normal tracking-tight text-neutral-900 dark:text-neutral-100">$4</span>
               <span className="text-neutral-600 text-xs font-light">/ month</span>
-              <span className="ml-2 text-[10px] border border-white/[0.1] text-neutral-400
+              <span className="ml-2 text-[10px] border border-black/[0.1] dark:border-white/[0.1] text-neutral-500 dark:text-neutral-400
                                px-2 py-0.5 rounded font-normal tracking-tight">
                 7-day free trial
               </span>
             </div>
           </div>
 
-          <div className="px-6 py-5 space-y-5 bg-[#0e0e0e]">
+          <div className="px-6 py-5 space-y-5 bg-white dark:bg-[#0e0e0e]">
             <ul className="space-y-3.5">
               {BENEFITS.map((b) => (
                 <li key={b.title} className="flex items-start gap-3">
                   <span className="mt-0.5 text-base shrink-0 text-neutral-500">{b.icon}</span>
                   <div>
-                    <p className="text-sm font-normal tracking-tight text-neutral-300">{b.title}</p>
+                    <p className="text-sm font-normal tracking-tight text-neutral-700 dark:text-neutral-300">{b.title}</p>
                     <p className="text-xs font-light text-neutral-600 mt-0.5 tracking-tight">{b.desc}</p>
                   </div>
                 </li>
@@ -171,11 +172,11 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
             </ul>
 
             {/* Focus Stats — locked teaser */}
-            <div className="rounded-lg border border-white/[0.06] p-4 relative bg-white/[0.02]">
+            <div className="rounded-lg border border-black/[0.06] dark:border-white/[0.06] p-4 relative bg-black/[0.02] dark:bg-white/[0.02]">
               <FocusStats locked />
               <div className="absolute inset-0 flex items-center justify-center rounded-lg backdrop-blur-[2px]">
-                <span className="text-[11px] font-normal tracking-tight text-neutral-400
-                                 bg-[#0e0e0e]/95 px-3 py-1.5 rounded border border-white/[0.1]">
+                <span className="text-[11px] font-normal tracking-tight text-neutral-600 dark:text-neutral-400
+                                 bg-white/95 dark:bg-[#0e0e0e]/95 px-3 py-1.5 rounded border border-black/[0.1] dark:border-white/[0.1]">
                   Unlock with Pro
                 </span>
               </div>
@@ -186,9 +187,9 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
               disabled={loading}
               className="
                 w-full py-2.5 rounded-lg text-sm font-normal tracking-tight
-                bg-white hover:bg-neutral-100 active:bg-neutral-200
-                text-[#0a0a0a]
-                transition-colors duration-150 active:scale-[0.99]
+                bg-neutral-900 text-white hover:bg-neutral-800
+                dark:bg-white dark:text-[#0a0a0a] dark:hover:bg-neutral-100
+                active:scale-[0.99] transition-colors duration-150
                 disabled:opacity-50 disabled:cursor-wait
                 flex items-center justify-center gap-2
               "
@@ -203,7 +204,7 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
               )}
             </button>
 
-            <p className="text-center text-[11px] font-light text-neutral-700 tracking-tight">
+            <p className="text-center text-[11px] font-light text-neutral-500 dark:text-neutral-700 tracking-tight">
               Cancel anytime.
             </p>
           </div>
