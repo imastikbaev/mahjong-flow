@@ -170,6 +170,10 @@ export default function TileCell({ tile, isFree, onClick, isPro = false, isHinte
               ? isDark
                 ? 'bg-yellow-400/[0.18] border-yellow-400/[0.85]'
                 : 'bg-yellow-100 border-yellow-400'
+              : isHinted
+              ? isDark
+                ? 'bg-violet-500/[0.12] border-violet-400/[0.70]'
+                : 'bg-violet-50 border-violet-400'
               : useElementTint
               ? ELEMENT_SURFACE_LIGHT[groupIndex]
               : isPro
