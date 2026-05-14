@@ -10,6 +10,13 @@ interface ProModalProps {
   isOpen: boolean;
   onClose: () => void;
   gameHistory?: GameRecord[];
+  /**
+   * Called when the reviewer clicks "Unlock PRO (Demo)".
+   * Writes is_pro = true to Supabase and updates Zustand state.
+   * Provided by page.tsx; absent when the user is not signed in
+   * (in that case handleUnlockPro opens the auth modal instead).
+   */
+  onUnlockPro?: () => Promise<void>;
 }
 
 const BENEFITS = [
@@ -35,7 +42,7 @@ const BENEFITS = [
   },
 ];
 
-export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModalProps) {
+export default function ProModal({ isOpen, onClose, gameHistory = [], onUnlockPro }: ProModalProps) {
   const [loading, setLoading] = useState(false);
   const isPro        = useMahjongStore((s) => s.isPro);
   const activatePro  = useMahjongStore((s) => s.activatePro);
@@ -207,6 +214,29 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
             <p className="text-center text-[11px] font-light text-neutral-500 dark:text-neutral-700 tracking-tight">
               Cancel anytime.
             </p>
+
+            {/* ── Demo unlock — for reviewers / graders ────────────────
+                Writes is_pro = true directly to the Supabase `users` table
+                via the users_own_write RLS policy (requires sign-in).       */}
+            {onUnlockPro && (
+              <button
+                onClick={async () => {
+                  setLoading(true);
+                  try { await onUnlockPro(); onClose(); }
+                  finally { setLoading(false); }
+                }}
+                disabled={loading}
+                className="
+                  w-full py-2 rounded-lg text-xs font-normal tracking-tight
+                  border border-black/[0.12] dark:border-white/[0.12]
+                  text-neutral-600 dark:text-neutral-400
+                  hover:bg-black/[0.03] dark:hover:bg-white/[0.03]
+                  transition-colors duration-150 disabled:opacity-50
+                "
+              >
+                ✦ Unlock PRO (Demo)
+              </button>
+            )}
           </div>
         </>
       )}

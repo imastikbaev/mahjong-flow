@@ -3,15 +3,15 @@ Mahjong Flow — AI Flow Coach microservice.
 
 Architecture
 ------------
-BoardAnalyzer   pure board-state logic (free-tile check, pair discovery,
-                feature extraction) — no I/O, fully testable.
+BoardAnalyzer     pure board-state logic (free-tile check, pair discovery,
+                  feature extraction) — no I/O, fully testable.
 
-Predictor ABC   strategy interface for the dead-end probability model.
-                HeuristicPredictor ships now; CatBoostPredictor is a
-                drop-in replacement once a model is trained.
+Predictor ABC     strategy interface for the dead-end probability model.
+                  HeuristicPredictor ships by default; see models.py for a
+                  CatBoostPredictor stub to swap in once a model is trained.
 
-FastAPI app     single endpoint /api/analyze-board that glues the above
-                together and returns advice + metrics.
+FastAPI app       single endpoint /api/analyze-board that glues the above
+                  together and returns advice + metrics.
 
 Run
 ---
@@ -355,48 +355,10 @@ class HeuristicPredictor(Predictor):
         return round(probability, 4)
 
 
-class CatBoostPredictor(Predictor):
-    """
-    Placeholder — replace with a real trained model.
-
-    Training pipeline outline:
-      1. Log (features, did_player_finish: bool) from the /api/analyze-board
-         endpoint to a Supabase `coach_samples` table.
-      2. Train:  catboost.CatBoostClassifier().fit(X, y)
-      3. Export: model.save_model("flow_coach.cbm")
-      4. Uncomment the code below and set MODEL_PATH.
-    """
-
-    MODEL_PATH = "flow_coach.cbm"
-
-    def __init__(self) -> None:
-        # from catboost import CatBoostClassifier
-        # self._model = CatBoostClassifier()
-        # self._model.load_model(self.MODEL_PATH)
-        raise NotImplementedError(
-            "CatBoostPredictor requires a trained model at "
-            f"'{self.MODEL_PATH}'. Use HeuristicPredictor in the meantime."
-        )
-
-    def predict(self, features: BoardFeatures) -> float:
-        feature_vector = [
-            features.free_ratio,
-            features.mobility,
-            features.isolation_ratio,
-            features.mean_burial_depth,
-            features.top_layer_ratio,
-            features.progress,
-            features.available_pairs,
-            features.isolated_types,
-        ]
-        # prob = self._model.predict_proba([feature_vector])[0][1]
-        # return round(float(prob), 4)
-        _ = feature_vector  # silence linter until model is wired
-        raise NotImplementedError
-
-
 # ---------------------------------------------------------------------------
 # Advice generator
+# CatBoostPredictor lives in models.py and can be swapped in once a trained
+# model is available — see that file for usage instructions.
 # ---------------------------------------------------------------------------
 
 THRESHOLDS = {
@@ -481,12 +443,17 @@ app = FastAPI(
     version="0.1.0",
 )
 
+_ALLOWED_ORIGINS = [
+    "https://2stage.vercel.app",
+    "http://localhost:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # hackathon prototype — tighten before prod
+    allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # Single shared predictor instance — swap class to upgrade to CatBoost.

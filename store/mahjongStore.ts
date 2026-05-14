@@ -50,6 +50,8 @@ interface MahjongState {
   selectTile:         (id: number) => void;
   resetBoard:         () => void;
   tickSecond:         () => void;
+  /** Set by page.tsx after reading the `is_pro` column from Supabase. */
+  setIsPro:           (v: boolean) => void;
   activatePro:        () => void;
   deactivatePro:      () => void;
   undoMove:           () => void;
@@ -245,8 +247,6 @@ function buildShuffledLayout(seed: number): Tile[] {
 // Zustand store
 // ---------------------------------------------------------------------------
 
-const PRO_KEY = 'mahjong_flow_pro';
-
 export const useMahjongStore = create<MahjongState>((set, get) => ({
   tiles:               [],
   selectedId:          null,
@@ -255,7 +255,9 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
   skin:                'classic',
   elapsedSeconds:      0,
   isComplete:          false,
-  isPro:               typeof window !== 'undefined' && localStorage.getItem(PRO_KEY) === '1',
+  // Initialised to false; page.tsx syncs the real value from Supabase
+  // once the auth user is resolved — no localStorage dependency.
+  isPro:               false,
   history:             [],
   hintedId:            null,
   sprintMode:          false,
@@ -360,13 +362,11 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
 
   resetBoard() { get().initBoard(get().gameMode); },
 
-  activatePro() {
-    if (typeof window !== 'undefined') localStorage.setItem(PRO_KEY, '1');
-    set({ isPro: true });
-  },
+  setIsPro(v: boolean) { set({ isPro: v }); },
+
+  activatePro() { set({ isPro: true }); },
 
   deactivatePro() {
-    if (typeof window !== 'undefined') localStorage.removeItem(PRO_KEY);
     set({ isPro: false, skin: 'classic', history: [], sprintMode: false, isFailed: false, sprintSecondsLeft: 180 });
   },
 
