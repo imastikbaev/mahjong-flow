@@ -107,7 +107,6 @@ export default function TopBar({ onProClick, onProfileClick, onRulesClick, nickn
       bg-neutral-100/90 dark:bg-[#0a0a0a]/90 backdrop-blur-xl
       border-b border-black/[0.07] dark:border-white/[0.06]
       sticky top-0 z-50
-      transition-colors duration-500 ease-in-out
     ">
 
       {/* ── Desktop layout (≥ sm) ─────────────────────────────────────── */}

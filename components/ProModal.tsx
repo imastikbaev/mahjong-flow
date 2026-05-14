@@ -67,7 +67,7 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
       {isPro ? (
         /* ── Pro active screen ─────────────────────────────────────── */
         <>
-          <div className="relative px-6 pt-7 pb-5 border-b border-black/[0.06] dark:border-white/[0.06] bg-neutral-50 dark:bg-[#111111] transition-colors duration-500 ease-in-out">
+          <div className="relative px-6 pt-7 pb-5 border-b border-black/[0.06] dark:border-white/[0.06] bg-neutral-50 dark:bg-[#111111]">
             <button
               onClick={onClose}
               className="absolute top-4 right-5 text-neutral-500 dark:text-neutral-600 hover:text-neutral-900 dark:hover:text-neutral-300
@@ -87,7 +87,7 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
             </p>
           </div>
 
-          <div className="px-6 py-5 space-y-5 bg-white dark:bg-[#0e0e0e] transition-colors duration-500 ease-in-out">
+          <div className="px-6 py-5 space-y-5 bg-white dark:bg-[#0e0e0e]">
             {/* Unlocked FocusStats */}
             <div className="rounded-lg border border-black/[0.06] dark:border-white/[0.06] p-4 bg-black/[0.02] dark:bg-white/[0.02]">
               <FocusStats locked={false} gameHistory={gameHistory} />
@@ -128,7 +128,7 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
       ) : (
         /* ── Upsell screen ─────────────────────────────────────────── */
         <>
-          <div className="relative px-6 pt-7 pb-5 border-b border-black/[0.06] dark:border-white/[0.06] bg-neutral-50 dark:bg-[#111111] transition-colors duration-500 ease-in-out">
+          <div className="relative px-6 pt-7 pb-5 border-b border-black/[0.06] dark:border-white/[0.06] bg-neutral-50 dark:bg-[#111111]">
             <button
               onClick={onClose}
               className="absolute top-4 right-5 text-neutral-500 dark:text-neutral-600 hover:text-neutral-900 dark:hover:text-neutral-300
@@ -158,7 +158,7 @@ export default function ProModal({ isOpen, onClose, gameHistory = [] }: ProModal
             </div>
           </div>
 
-          <div className="px-6 py-5 space-y-5 bg-white dark:bg-[#0e0e0e] transition-colors duration-500 ease-in-out">
+          <div className="px-6 py-5 space-y-5 bg-white dark:bg-[#0e0e0e]">
             <ul className="space-y-3.5">
               {BENEFITS.map((b) => (
                 <li key={b.title} className="flex items-start gap-3">

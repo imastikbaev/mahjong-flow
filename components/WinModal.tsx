@@ -80,7 +80,7 @@ export default function WinModal({ isOpen, onClose, onViewLeaderboard, elapsedSe
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} closeOnBackdrop={false} maxWidth="max-w-sm">
-      <div className="relative overflow-hidden bg-white dark:bg-[#0e0e0e] transition-colors duration-500 ease-in-out">
+      <div className="relative overflow-hidden bg-white dark:bg-[#0e0e0e]">
 
         {/* Particles */}
         {isOpen && particlesRef.current.map((p) => (
@@ -95,7 +95,7 @@ export default function WinModal({ isOpen, onClose, onViewLeaderboard, elapsedSe
         />
 
         {/* Header stripe */}
-        <div className="px-6 pt-8 pb-0 border-b border-black/[0.06] dark:border-white/[0.06] transition-colors duration-500 ease-in-out">
+        <div className="px-6 pt-8 pb-0 border-b border-black/[0.06] dark:border-white/[0.06]">
           {/* Icon */}
           <motion.div
             initial={{ scale: 0.5, opacity: 0 }}

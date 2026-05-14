@@ -67,8 +67,7 @@ export default function Modal({
             transition={{ type: 'spring', stiffness: 340, damping: 28 }}
             className={`relative w-full ${maxWidth}
                         bg-white dark:bg-[#0e0e0e] border border-black/[0.07] dark:border-white/[0.07]
-                        rounded-2xl shadow-2xl overflow-hidden
-                        transition-colors duration-500 ease-in-out`}
+                        rounded-2xl shadow-2xl overflow-hidden`}
             onClick={(e) => e.stopPropagation()}
           >
             {children}

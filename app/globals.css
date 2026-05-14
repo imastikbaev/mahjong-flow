@@ -34,10 +34,28 @@ body {
   font-family: var(--font-sans, system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* Smooth background/text crossfade on theme switch — safe, no Framer Motion conflict */
-  transition-property: color, background-color;
-  transition-duration: 500ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/*
+  View Transitions API — theme crossfade.
+  The browser composites old/new page snapshots on the GPU; no per-element
+  repaints, no Framer Motion conflicts.  Falls back to instant switch on
+  browsers without startViewTransition support.
+*/
+::view-transition-old(root) {
+  animation: 350ms ease both vt-out;
+}
+::view-transition-new(root) {
+  animation: 350ms ease both vt-in;
+}
+
+@keyframes vt-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes vt-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* Hint tile pulse — neon violet, visible on both light and dark backgrounds */
