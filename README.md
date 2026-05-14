@@ -11,6 +11,9 @@ Structured play over passive scrolling. Flow state over frustration.
 
 <img src="demo.gif" width="720" alt="Mahjong Flow demo" />
 
+### 🚀 **[Play Live Demo on Vercel](https://your-vercel-link.vercel.app)**
+🧠 **[AI Coach Backend API](https://your-python-backend.onrender.com/docs)**
+
 <br />
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.2-black?style=flat-square)](https://nextjs.org)
