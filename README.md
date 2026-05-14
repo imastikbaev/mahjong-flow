@@ -11,7 +11,7 @@ Structured play over passive scrolling. Flow state over frustration.
 
 <img src="demo.gif" width="720" alt="Mahjong Flow demo" />
 
-### 🚀 **[Play Live Demo on Vercel](https://your-vercel-link.vercel.app)**
+### 🚀 **[Play Live Demo on Vercel](2stage.vercel.app)**
 🧠 **[AI Coach Backend API](https://your-python-backend.onrender.com/docs)**
 
 <br />
@@ -61,6 +61,29 @@ The coach surfaces tips without interrupting play — no modal popups, no forced
 
 Every player worldwide receives the same seeded board each day. Scores are ranked globally and by city. The seed is derived deterministically from the date — no server call required to generate the board.
 
+### Auth — Email & Google Sign-in
+
+Players can create an account with email + password or continue with Google OAuth. Authentication is powered by Supabase Auth:
+
+- On first sign-up a database trigger automatically creates a matching row in `public.users`
+- Sessions persist across tabs via a cookie-refreshing middleware
+- The game is fully playable without an account — auth unlocks quest tracking and cross-device streaks
+
+### Quest Engine
+
+Six time-boxed quests reset automatically based on UTC time — no cron job required:
+
+| Period | Quest | Goal |
+|--------|-------|------|
+| Daily  | Daily Challenger | Complete 1 Daily Challenge |
+| Daily  | Sprint Session | Play 3 Sprint matches |
+| Daily  | Pair Streak | Clear 50 pairs in any mode |
+| Weekly | Flow State | Score 8 000+ in one game |
+| Weekly | Tile Master | Clear 500 pairs total |
+| Weekly | Committed | Complete the Daily 7 days in a row |
+
+Progress is stored in `quests_progress` (Supabase, RLS-protected). Expired quests are detected client-side by comparing `expires_at` to `now()` and upserted fresh on the next sync — zero scheduled jobs.
+
 ### Sprint Mode *(Pro)*
 
 Three minutes. Clear as many pairs as possible. Score = `pairs × 100 + remaining_seconds × 10`. The timer turns red at 30 seconds.
@@ -106,7 +129,21 @@ The 144-tile Turtle layout is hardcoded as `[x, y, z]` coordinates. Tile freedom
 
 ### Supabase schema
 
-Two tables: `users` (uuid, nickname, city) and `leaderboard` (user\_id, date, score, time\_seconds, type). Scores are upserted with a unique constraint on `(user_id, date, type)` — only the personal best survives. No auth dependency; the client generates a stable UUID on first visit.
+Three tables:
+
+- **`users`** — `(uuid, nickname, city, is_pro)`. Populated automatically by a `handle_new_user()` trigger on `auth.users` INSERT. Anonymous players generate a stable UUID in localStorage; signed-in players use their Supabase auth UUID.
+- **`leaderboard`** — `(user_id, date, score, time_seconds, type)`. Scores are upserted with a unique constraint on `(user_id, date, type)` — only the personal best survives.
+- **`quests_progress`** — `(user_id, quest_id, current_value, target_value, expires_at, is_completed)`. RLS policy restricts every row to its owner (`auth.uid() = user_id`). Expired quests are reset client-side and re-upserted; no server cron needed.
+
+### Auth flow
+
+```
+Browser → supabase.auth.signInWithOAuth / signInWithPassword
+       → Supabase redirects to /auth/callback
+       → route.ts exchanges code for session cookie
+       → middleware.ts refreshes cookie on every subsequent request
+       → useAuthUser() mirrors session state via onAuthStateChange
+```
 
 ---
 
@@ -119,7 +156,8 @@ Two tables: `users` (uuid, nickname, city) and `leaderboard` (user\_id, date, sc
 | Animation | Framer Motion 12 |
 | State | Zustand 5 |
 | Icons | lucide-react |
-| Database | Supabase (PostgreSQL via PostgREST) |
+| Auth | Supabase Auth (email/password + Google OAuth) |
+| Database | Supabase (PostgreSQL via PostgREST + RLS) |
 | Fonts | Geist (variable, `next/font`) |
 | Deployment | Vercel |
 
@@ -151,34 +189,18 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Database
 
-```sql
--- users
-create table users (
-  id         uuid primary key,
-  nickname   text not null,
-  city       text,
-  is_pro     boolean default false,
-  created_at timestamptz default now()
-);
+Apply the full migration in one step:
 
--- leaderboard
-create table leaderboard (
-  id           uuid primary key default gen_random_uuid(),
-  user_id      uuid references users(id),
-  date         date not null,
-  time_seconds int  not null,
-  score        int  not null,
-  type         text check (type in ('daily', 'practice')),
-  created_at   timestamptz default now(),
-  unique (user_id, date, type)
-);
-
--- open RLS for client-side upserts
-alter table users       enable row level security;
-alter table leaderboard enable row level security;
-create policy "public_users"       on users       for all using (true) with check (true);
-create policy "public_leaderboard" on leaderboard for all using (true) with check (true);
+```bash
+# Paste the file contents into Supabase Dashboard → SQL Editor → Run
+supabase/migrations/auth_and_quests.sql
 ```
+
+The migration creates:
+- `public.users` with `handle_new_user()` trigger syncing from `auth.users`
+- `public.leaderboard` with unique personal-best constraint
+- `public.quests_progress` with RLS (`auth.uid() = user_id`) and auto `updated_at` trigger
+- Open RLS policies on `users` and `leaderboard` for anonymous score submission
 
 ---
 
@@ -188,6 +210,16 @@ create policy "public_leaderboard" on leaderboard for all using (true) with chec
 |----------|-------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (public-safe) |
+| `NEXT_PUBLIC_AI_URL` | AI Coach FastAPI backend URL (use `http://127.0.0.1:8000` locally) |
+
+### Supabase Dashboard checklist
+
+| Step | Where |
+|------|-------|
+| Run migration SQL | SQL Editor → paste `supabase/migrations/auth_and_quests.sql` → Run |
+| Enable Email auth | Authentication → Providers → Email |
+| Enable Google OAuth | Authentication → Providers → Google → add Client ID + Secret |
+| Add redirect URL | Authentication → URL Configuration → add `https://your-domain/auth/callback` |
 
 ---
 

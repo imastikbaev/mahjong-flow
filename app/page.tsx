@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useMahjongStore } from '@/store/mahjongStore';
-import { useProfile } from '@/lib/hooks/useProfile';
-import { useSubmitScore } from '@/lib/hooks/useSubmitScore';
-import { useGameHistory } from '@/lib/hooks/useGameHistory';
+import { useProfile }      from '@/lib/hooks/useProfile';
+import { useSubmitScore }  from '@/lib/hooks/useSubmitScore';
+import { useGameHistory }  from '@/lib/hooks/useGameHistory';
+import { useAuthUser }     from '@/lib/hooks/useAuthUser';
+import { useQuests }       from '@/lib/hooks/useQuests';
 
 import TopBar       from '@/components/TopBar';
 import MahjongBoard from '@/components/MahjongBoard';
@@ -14,6 +16,8 @@ import Leaderboard  from '@/components/Leaderboard';
 import AICoach      from '@/components/AICoach';
 import ProfileModal from '@/components/ProfileModal';
 import RulesModal   from '@/components/RulesModal';
+import AuthModal    from '@/components/AuthModal';
+import QuestsPanel  from '@/components/QuestsPanel';
 
 export default function Home() {
   const isComplete        = useMahjongStore((s) => s.isComplete);
@@ -26,16 +30,20 @@ export default function Home() {
   const tiles             = useMahjongStore((s) => s.tiles);
   const isPro             = useMahjongStore((s) => s.isPro);
 
-  const { profile, saveProfile }          = useProfile();
-  const { submit }                        = useSubmitScore();
+  const { profile, saveProfile }            = useProfile();
+  const { submit }                          = useSubmitScore();
   const { history: gameHistory, addRecord } = useGameHistory();
+  const { user: authUser }                  = useAuthUser();
+  const { quests, updateProgress }          = useQuests(authUser);
 
   const [proOpen,         setProOpen]         = useState(false);
   const [winOpen,         setWinOpen]         = useState(false);
   const [profileOpen,     setProfileOpen]     = useState(false);
   const [rulesOpen,       setRulesOpen]       = useState(false);
+  const [authOpen,        setAuthOpen]        = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showCoach,       setShowCoach]       = useState(false);
+  const [showQuests,      setShowQuests]      = useState(false);
 
   const submittedAtRef = useRef<number | null>(null);
 
@@ -62,8 +70,11 @@ export default function Home() {
         pairsMatched: 72,
       });
 
-      // Only submit daily non-sprint games to leaderboard
+      // Quest progress — daily challenge
       if (gameMode === 'daily' && !sprintMode) {
+        updateProgress('daily_complete_challenge', 1);
+        updateProgress('weekly_daily_7', 1);
+        if (score >= 8000) updateProgress('weekly_score_8000', 1);
         submit({
           userId:      profile.userId,
           nickname:    profile.nickname,
@@ -72,6 +83,9 @@ export default function Home() {
           type:        'daily',
         });
       }
+      if (sprintMode) updateProgress('daily_sprint_3', 1);
+      updateProgress('daily_pairs_50', pairsMatched);
+      updateProgress('weekly_pairs_500', pairsMatched);
     }
 
     return () => clearTimeout(timer);
@@ -95,6 +109,9 @@ export default function Home() {
         completed:    false,
         pairsMatched,
       });
+      updateProgress('daily_sprint_3', 1);
+      updateProgress('daily_pairs_50', pairsMatched);
+      updateProgress('weekly_pairs_500', pairsMatched);
     }
 
     return () => clearTimeout(timer);
@@ -108,22 +125,33 @@ export default function Home() {
     }
   }, [isComplete, isFailed]);
 
+  const sidebarOpen = showLeaderboard || (showCoach && isPro) || showQuests;
+
   return (
     <div className="flex flex-col h-full min-h-screen relative z-10">
       <TopBar
         onProClick={    () => setProOpen(true)}
         onProfileClick={() => setProfileOpen(true)}
         onRulesClick={  () => setRulesOpen(true)}
+        onSignInClick={ () => setAuthOpen(true)}
         nickname={profile.nickname}
+        authUser={authUser}
       />
 
       <div className="flex flex-1 overflow-hidden">
         <MahjongBoard />
 
-        {(showLeaderboard || (showCoach && isPro)) && (
+        {sidebarOpen && (
           <aside className="hidden lg:flex flex-col gap-4 p-4 w-80 shrink-0 overflow-y-auto">
             {showCoach && isPro && <AICoach />}
-            {showLeaderboard    && <Leaderboard userCity={profile.city} />}
+            {showQuests          && (
+              <QuestsPanel
+                quests={quests}
+                user={authUser}
+                onSignInClick={() => setAuthOpen(true)}
+              />
+            )}
+            {showLeaderboard     && <Leaderboard userCity={profile.city} />}
           </aside>
         )}
       </div>
@@ -146,6 +174,21 @@ export default function Home() {
           {showCoach && isPro ? '✕ hide coach' : `◈ ai coach${isPro ? '' : ' ✦'}`}
         </button>
         <button
+          onClick={() => setShowQuests((v) => !v)}
+          className="
+            px-4 py-2 rounded-full backdrop-blur-sm
+            bg-white/90 dark:bg-[#0e0e0e]/90
+            border border-black/[0.1] dark:border-white/[0.1]
+            hover:border-black/[0.18] dark:hover:border-white/[0.18]
+            text-xs font-normal tracking-tight
+            text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200
+            transition-all duration-200 active:scale-95
+          "
+          aria-label={showQuests ? 'Hide quests' : 'Show quests'}
+        >
+          {showQuests ? '✕ hide quests' : '◇ quests'}
+        </button>
+        <button
           onClick={() => setShowLeaderboard((v) => !v)}
           className="
             px-4 py-2 rounded-full backdrop-blur-sm
@@ -163,22 +206,22 @@ export default function Home() {
       </div>
 
       {/* Modals */}
-      <ProModal isOpen={proOpen} onClose={() => setProOpen(false)} gameHistory={gameHistory} />
-      <RulesModal isOpen={rulesOpen} onClose={() => setRulesOpen(false)} />
+      <AuthModal    isOpen={authOpen}    onClose={() => setAuthOpen(false)} />
+      <ProModal     isOpen={proOpen}     onClose={() => setProOpen(false)} gameHistory={gameHistory} />
+      <RulesModal   isOpen={rulesOpen}   onClose={() => setRulesOpen(false)} />
       <ProfileModal
         isOpen={profileOpen}
         onClose={() => setProfileOpen(false)}
         profile={profile}
         onSave={saveProfile}
+        user={authUser}
+        onSignInClick={() => { setProfileOpen(false); setAuthOpen(true); }}
       />
       <WinModal
         isOpen={winOpen}
         onClose={() => setWinOpen(false)}
         elapsedSeconds={elapsedSeconds}
-        onViewLeaderboard={() => {
-          setWinOpen(false);
-          setShowLeaderboard(true);
-        }}
+        onViewLeaderboard={() => { setWinOpen(false); setShowLeaderboard(true); }}
       />
     </div>
   );

@@ -4,15 +4,18 @@ import { useEffect, useRef, useMemo, useState } from 'react';
 import { RotateCcw, Layers } from 'lucide-react';
 import { useMahjongStore, hasAvailableMoves } from '@/store/mahjongStore';
 import ThemeToggle from './ThemeToggle';
+import type { User } from '@supabase/supabase-js';
 
 interface TopBarProps {
-  onProClick: () => void;
+  onProClick:     () => void;
   onProfileClick: () => void;
-  onRulesClick: () => void;
-  nickname: string;
+  onRulesClick:   () => void;
+  onSignInClick:  () => void;
+  nickname:       string;
+  authUser?:      User | null;
 }
 
-export default function TopBar({ onProClick, onProfileClick, onRulesClick, nickname }: TopBarProps) {
+export default function TopBar({ onProClick, onProfileClick, onRulesClick, onSignInClick, nickname, authUser }: TopBarProps) {
   const tiles          = useMahjongStore((s) => s.tiles);
   const initBoard      = useMahjongStore((s) => s.initBoard);
   const isComplete     = useMahjongStore((s) => s.isComplete);
@@ -114,14 +117,37 @@ export default function TopBar({ onProClick, onProfileClick, onRulesClick, nickn
         {/* Brand + profile */}
         <div className="flex items-center gap-3">
           <Brand />
-          <button
-            onClick={onProfileClick}
-            className="text-[11px] font-normal tracking-tight text-neutral-500 dark:text-neutral-600
-                       hover:text-neutral-900 dark:hover:text-neutral-300 transition-colors duration-150"
-            title="Edit profile"
-          >
-            {nickname || 'anonymous'}
-          </button>
+          {authUser ? (
+            <button
+              onClick={onProfileClick}
+              className="flex items-center gap-1.5 text-[11px] font-normal tracking-tight
+                         text-neutral-600 dark:text-neutral-400
+                         hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors duration-150"
+              title="Profile"
+            >
+              <span className="w-4 h-4 rounded-full bg-emerald-500/20 dark:bg-emerald-400/20 flex items-center justify-center text-[8px] text-emerald-600 dark:text-emerald-400 shrink-0">✦</span>
+              {authUser.user_metadata?.full_name?.split(' ')[0] ?? authUser.email?.split('@')[0] ?? 'me'}
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onProfileClick}
+                className="text-[11px] font-normal tracking-tight text-neutral-500 dark:text-neutral-600
+                           hover:text-neutral-900 dark:hover:text-neutral-300 transition-colors duration-150"
+                title="Edit profile"
+              >
+                {nickname || 'anonymous'}
+              </button>
+              <button
+                onClick={onSignInClick}
+                className="text-[10px] font-normal tracking-tight text-neutral-400 dark:text-neutral-600
+                           hover:text-neutral-700 dark:hover:text-neutral-400 transition-colors duration-150"
+                title="Sign in"
+              >
+                sign in →
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Stats */}

@@ -103,6 +103,27 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
         <div className="h-px bg-black/[0.06] dark:bg-white/[0.06]" />
 
         <p className="text-[10px] uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-600 font-normal">
+          Quests
+        </p>
+
+        <RuleSection icon="◇" title="Daily quests">
+          Three quests reset every day at midnight UTC: complete the Daily Challenge, play Sprint
+          matches, and clear 50 pairs. Open the quest panel (◇ quests, bottom-right) to track progress.
+        </RuleSection>
+
+        <RuleSection icon="◆" title="Weekly quests">
+          Three longer quests reset each Monday: score 8 000+ in a single game, clear 500 pairs
+          total, and complete the Daily Challenge 7 days running.
+        </RuleSection>
+
+        <RuleSection icon="✦" title="Account required">
+          Quest progress is saved to your account. Sign in (top-right) with Google or email to unlock
+          tracking and keep your streak across devices.
+        </RuleSection>
+
+        <div className="h-px bg-black/[0.06] dark:bg-white/[0.06]" />
+
+        <p className="text-[10px] uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-600 font-normal">
           Difficulty
         </p>
 
