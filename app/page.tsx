@@ -24,6 +24,7 @@ export default function Home() {
   const sprintSecondsLeft = useMahjongStore((s) => s.sprintSecondsLeft);
   const difficulty        = useMahjongStore((s) => s.difficulty);
   const tiles             = useMahjongStore((s) => s.tiles);
+  const isPro             = useMahjongStore((s) => s.isPro);
 
   const { profile, saveProfile }          = useProfile();
   const { submit }                        = useSubmitScore();
@@ -119,10 +120,10 @@ export default function Home() {
       <div className="flex flex-1 overflow-hidden">
         <MahjongBoard />
 
-        {(showLeaderboard || showCoach) && (
+        {(showLeaderboard || (showCoach && isPro)) && (
           <aside className="hidden lg:flex flex-col gap-4 p-4 w-80 shrink-0 overflow-y-auto">
-            {showCoach      && <AICoach />}
-            {showLeaderboard && <Leaderboard userCity={profile.city} />}
+            {showCoach && isPro && <AICoach />}
+            {showLeaderboard    && <Leaderboard userCity={profile.city} />}
           </aside>
         )}
       </div>
@@ -130,7 +131,7 @@ export default function Home() {
       {/* FAB buttons — bottom-right */}
       <div className="fixed bottom-5 right-5 z-40 flex flex-col gap-2 items-end">
         <button
-          onClick={() => setShowCoach((v) => !v)}
+          onClick={() => isPro ? setShowCoach((v) => !v) : setProOpen(true)}
           className="
             px-4 py-2 rounded-full backdrop-blur-sm
             bg-white/90 dark:bg-[#0e0e0e]/90
@@ -142,7 +143,7 @@ export default function Home() {
           "
           aria-label={showCoach ? 'Hide AI coach' : 'Show AI coach'}
         >
-          {showCoach ? '✕ hide coach' : '◈ ai coach'}
+          {showCoach && isPro ? '✕ hide coach' : `◈ ai coach${isPro ? '' : ' ✦'}`}
         </button>
         <button
           onClick={() => setShowLeaderboard((v) => !v)}
