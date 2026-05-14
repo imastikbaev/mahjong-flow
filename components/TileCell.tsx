@@ -92,10 +92,10 @@ const ELEMENT_SURFACE_LIGHT = [
 ] as const;
 
 const ELEMENT_HOVER_LIGHT = [
-  'hover:bg-emerald-100 hover:border-emerald-300',  // Earth
-  'hover:bg-blue-100    hover:border-blue-300',      // Water
-  'hover:bg-orange-100  hover:border-orange-300',    // Fire
-  'hover:bg-slate-100   hover:border-slate-300',     // Air
+  '[@media(hover:hover)]:hover:bg-emerald-100 [@media(hover:hover)]:hover:border-emerald-300',  // Earth
+  '[@media(hover:hover)]:hover:bg-blue-100    [@media(hover:hover)]:hover:border-blue-300',      // Water
+  '[@media(hover:hover)]:hover:bg-orange-100  [@media(hover:hover)]:hover:border-orange-300',    // Fire
+  '[@media(hover:hover)]:hover:bg-slate-100   [@media(hover:hover)]:hover:border-slate-300',     // Air
 ] as const;
 
 export default function TileCell({ tile, isFree, onClick, isPro = false, isHinted = false }: TileCellProps) {
@@ -181,8 +181,8 @@ export default function TileCell({ tile, isFree, onClick, isPro = false, isHinte
               ? useElementTint
                 ? `cursor-pointer ${ELEMENT_HOVER_LIGHT[groupIndex]}`
                 : isPro
-                ? 'cursor-pointer hover:bg-neutral-50 hover:border-neutral-300 dark:hover:bg-white/[0.09] dark:hover:border-white/[0.22]'
-                : 'cursor-pointer hover:bg-neutral-50 hover:border-neutral-300/80 dark:hover:bg-white/[0.06] dark:hover:border-white/[0.15]'
+                ? 'cursor-pointer [@media(hover:hover)]:hover:bg-neutral-50 [@media(hover:hover)]:hover:border-neutral-300 dark:[@media(hover:hover)]:hover:bg-white/[0.09] dark:[@media(hover:hover)]:hover:border-white/[0.22]'
+                : 'cursor-pointer [@media(hover:hover)]:hover:bg-neutral-50 [@media(hover:hover)]:hover:border-neutral-300/80 dark:[@media(hover:hover)]:hover:bg-white/[0.06] dark:[@media(hover:hover)]:hover:border-white/[0.15]'
               : '',
 
             // ── Locked — stronger greyscale + opacity ──────────────────────

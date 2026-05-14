@@ -66,7 +66,7 @@ export default function MahjongBoard() {
   return (
     <main
       ref={containerRef}
-      className="flex-1 flex items-center justify-center overflow-hidden p-4 relative z-10"
+      className="flex-1 flex items-center justify-center overflow-x-auto overflow-y-hidden p-4 relative z-10"
     >
       {/* Ambient glow — dark: white haze, light: neutral shadow pool */}
       <div
