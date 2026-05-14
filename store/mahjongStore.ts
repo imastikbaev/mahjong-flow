@@ -1,54 +1,65 @@
 import { create } from 'zustand';
+import {
+  isTileFree,
+  isTileFreeWithSet,
+  buildOccupancySet,
+  hasAvailableMoves,
+} from '@/lib/mahjong/engine';
 
 // ---------------------------------------------------------------------------
-// Types
+// Types — defined in lib/mahjong/types.ts, re-exported here for convenience
+// so existing consumer imports (`from '@/store/mahjongStore'`) keep working.
 // ---------------------------------------------------------------------------
 
-export type TileState  = 'idle' | 'selected' | 'matched';
+export type { Tile, TileState } from '@/lib/mahjong/types';
 export type GameMode   = 'daily' | 'practice';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type Skin       = 'classic' | 'pro';
 
-export interface Tile {
-  id: number;
-  type: number;
-  x: number;
-  y: number;
-  z: number;
-  state: TileState;
-}
+// Local type alias to avoid re-importing inside this file.
+import type { Tile, TileState } from '@/lib/mahjong/types';
+
+// Re-export engine utilities that external consumers depended on.
+export { isTileFree, hasAvailableMoves } from '@/lib/mahjong/engine';
 
 export const DAILY_DATE = new Date().toISOString().slice(0, 10);
 export const DAILY_SEED = dateToSeed(DAILY_DATE);
 
 interface MahjongState {
-  tiles: Tile[];
-  selectedId: number | null;
-  gameMode: GameMode;
-  difficulty: Difficulty;
-  skin: Skin;
-  elapsedSeconds: number;
-  isComplete: boolean;
-  isPro: boolean;
-  history: Tile[][];
-  hintedId: number | null;
-  sprintMode: boolean;
-  sprintSecondsLeft: number;
-  isFailed: boolean;
+  tiles:                Tile[];
+  selectedId:           number | null;
+  gameMode:             GameMode;
+  difficulty:           Difficulty;
+  skin:                 Skin;
+  elapsedSeconds:       number;
+  isComplete:           boolean;
+  isPro:                boolean;
+  history:              Tile[][];
+  hintedId:             number | null;
+  sprintMode:           boolean;
+  sprintSecondsLeft:    number;
+  isFailed:             boolean;
+  /**
+   * Set to true when buildSolvableLayout exhausts all retry attempts and falls
+   * back to a pure shuffle. The board may not be completable; the UI should
+   * surface a non-blocking warning so the player can choose to reshuffle.
+   */
+  isUnsolvableWarning:  boolean;
 
-  initBoard: (mode?: GameMode) => void;
-  selectTile: (id: number) => void;
-  resetBoard: () => void;
-  tickSecond: () => void;
-  activatePro: () => void;
-  deactivatePro: () => void;
-  undoMove: () => void;
-  setDifficulty: (d: Difficulty) => void;
-  setSkin: (skin: Skin) => void;
-  getHint: () => void;
+  initBoard:          (mode?: GameMode) => void;
+  selectTile:         (id: number) => void;
+  resetBoard:         () => void;
+  tickSecond:         () => void;
+  activatePro:        () => void;
+  deactivatePro:      () => void;
+  undoMove:           () => void;
+  setDifficulty:      (d: Difficulty) => void;
+  setSkin:            (skin: Skin) => void;
+  getHint:            () => void;
   reshuffleRemaining: () => void;
-  setGameMode: (mode: GameMode) => void;
-  setSprintMode: (on: boolean) => void;
+  setGameMode:        (mode: GameMode) => void;
+  setSprintMode:      (on: boolean) => void;
+  dismissUnsolvable:  () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -59,7 +70,7 @@ const TILE_TYPE_COUNT = 36;
 
 const TURTLE_LAYOUT: [number, number, number][] = (() => {
   const t: [number, number, number][] = [];
-  // Layer 0 — 8×8 base (64) + 8 wing tiles = 72
+  // Layer 0 — 8×8 base (72 tiles) + 8 wing tiles = 80... adjusted to 144 total
   for (let y = 0; y <= 14; y += 2)
     for (let x = 2; x <= 16; x += 2)
       t.push([x, y, 0]);
@@ -117,94 +128,56 @@ function shuffle<T>(arr: T[], rng: () => number): T[] {
 }
 
 // ---------------------------------------------------------------------------
-// Free-tile predicate (exported for AI coach + board component)
-// ---------------------------------------------------------------------------
-
-export function isTileFree(tile: Tile, allTiles: Tile[]): boolean {
-  if (tile.state !== 'idle') return false;
-  // Both 'idle' and 'selected' tiles are physically on the board and must block neighbours.
-  // Only 'matched' tiles have been removed.
-  const active = allTiles.filter((t) => t.state !== 'matched' && t.id !== tile.id);
-
-  // Coverage: a tile in the layer above blocks if it overlaps within ±1 unit on
-  // both axes — supports the standard grid (step 2) and half-step offsets (step 1).
-  const hasAbove = active.some(
-    (t) =>
-      t.z === tile.z + 1 &&
-      Math.abs(t.x - tile.x) < 2 &&
-      Math.abs(t.y - tile.y) < 2,
-  );
-  if (hasAbove) return false;
-
-  // Lateral: a neighbour blocks a side when it is within 2 x-units AND within
-  // 1 y-unit. The y tolerance lets tiles that sit at half-row offsets still
-  // block correctly — required by the classic "Turtle" layout.
-  const blockedLeft  = active.some(
-    (t) => t.z === tile.z && Math.abs(t.y - tile.y) < 2 && t.x < tile.x && tile.x - t.x <= 2,
-  );
-  const blockedRight = active.some(
-    (t) => t.z === tile.z && Math.abs(t.y - tile.y) < 2 && t.x > tile.x && t.x - tile.x <= 2,
-  );
-  return !blockedLeft || !blockedRight;
-}
-
-/**
- * Returns true if at least one matching pair exists among currently free tiles.
- * Used for deadlock detection — when false, reshuffleRemaining() should be offered.
- */
-export function hasAvailableMoves(tiles: Tile[]): boolean {
-  const free = tiles.filter((t) => isTileFree(t, tiles));
-  const seen = new Set<number>();
-
-  // A selected tile is still on the board — if a free tile shares its type, that IS a move.
-  const selectedTile = tiles.find((t) => t.state === 'selected');
-  if (selectedTile) seen.add(selectedTile.type);
-
-  for (const t of free) {
-    if (seen.has(t.type)) return true;
-    seen.add(t.type);
-  }
-  return false;
-}
-
-// ---------------------------------------------------------------------------
 // Board generators
 // ---------------------------------------------------------------------------
 
 /**
  * Guaranteed-solvable layout — two-phase forward simulation with retry.
  *
- * Phase 1 — simulate a full solve: repeatedly pick two random free tiles
- * and "remove" them, recording the removal order. If a deadlock is reached
- * before all 72 pairs are found, retry with a perturbed seed (up to
- * MAX_ATTEMPTS times). In practice the first attempt succeeds ~97% of the
- * time; retries handle the rare unlucky seed.
+ * Phase 1: simulate a full solve using the Set-based O(N) engine so the
+ *   inner loop runs in O(N) per step instead of O(N²).  If a deadlock
+ *   is reached before all 72 pairs are found, retry with a perturbed seed
+ *   (up to MAX_ATTEMPTS times; first attempt succeeds ~97% of the time).
  *
- * Phase 2 — assign types along the valid removal order so matching tiles are
- * always reachable at the moment they need to be matched.
+ * Phase 2: assign tile types along the valid removal order so every
+ *   matching pair is always reachable at the moment it needs to be matched.
  *
- * typeCount controls variety:
- *   36 (easy)   → each type appears in exactly 2 pairs (full variety)
- *   18 (medium) → each type appears in 4 pairs (more visible matches)
+ * Returns { tiles, usedFallback } — callers set isUnsolvableWarning when
+ * usedFallback is true so the UI can alert the player.
  */
-function buildSolvableLayout(seed: number, typeCount = TILE_TYPE_COUNT): Tile[] {
+function buildSolvableLayout(
+  seed:      number,
+  typeCount: number = TILE_TYPE_COUNT,
+): { tiles: Tile[]; usedFallback: boolean } {
   const MAX_ATTEMPTS = 20;
   const positions    = TURTLE_LAYOUT.slice(0, 144);
   const PAIRS_NEEDED = positions.length / 2; // 72
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    // Perturb seed on retry so we don't replay the same deadlock.
     const rng = createRng((seed + attempt * 0x9e3779b9) >>> 0);
 
-    // Phase 1 — simulate a full solve
-    let simTiles: Tile[] = positions.map(([x, y, z], index) => ({
-      id: index, type: 0, x, y, z, state: 'idle' as TileState,
-    }));
-
+    // Phase 1 — simulate a full solve using the engine's Set-based predicate.
+    // Maintain a mutable occupancy set so each free-tile check is O(1)
+    // instead of O(N), reducing the simulation from O(N³) to O(N²) total.
+    const simTileMap = new Map<number, Tile>(
+      positions.map(([x, y, z], index) => [
+        index,
+        { id: index, type: 0, x, y, z, state: 'idle' as TileState },
+      ]),
+    );
+    const occupied = buildOccupancySet([...simTileMap.values()]);
     const pairOrder: [number, number][] = [];
 
     while (true) {
-      const free = simTiles.filter((t) => isTileFree(t, simTiles));
+      const free: Tile[] = [];
+      for (const tile of simTileMap.values()) {
+        if (tile.state !== 'idle') continue;
+        const key = `${tile.x},${tile.y},${tile.z}`;
+        occupied.delete(key);
+        if (isTileFreeWithSet(tile, occupied)) free.push(tile);
+        occupied.add(key);
+      }
+
       if (free.length < 2) break;
 
       const a    = free[Math.floor(rng() * free.length)];
@@ -212,21 +185,25 @@ function buildSolvableLayout(seed: number, typeCount = TILE_TYPE_COUNT): Tile[] 
       const b    = rest[Math.floor(rng() * rest.length)];
 
       pairOrder.push([a.id, b.id]);
-      simTiles = simTiles.map((t) =>
-        t.id === a.id || t.id === b.id ? { ...t, state: 'matched' as TileState } : t,
-      );
+
+      // Remove the matched pair from the occupancy set immediately
+      // so subsequent iterations see the updated board state.
+      const matchedA = { ...a, state: 'matched' as TileState };
+      const matchedB = { ...b, state: 'matched' as TileState };
+      simTileMap.set(a.id, matchedA);
+      simTileMap.set(b.id, matchedB);
+      occupied.delete(`${a.x},${a.y},${a.z}`);
+      occupied.delete(`${b.x},${b.y},${b.z}`);
     }
 
-    // If the simulation stalled before covering all tiles, try again.
     if (pairOrder.length < PAIRS_NEEDED) continue;
 
-    // Phase 2 — build a type pool of exactly PAIRS_NEEDED entries
+    // Phase 2 — build a type pool of exactly PAIRS_NEEDED entries.
     const pairsPerType = Math.max(1, Math.round(PAIRS_NEEDED / typeCount));
     const pairTypes: number[] = [];
     for (let t = 0; t < typeCount; t++) {
       for (let p = 0; p < pairsPerType; p++) pairTypes.push(t);
     }
-    // Trim or pad to exactly PAIRS_NEEDED so the map covers every pair.
     while (pairTypes.length < PAIRS_NEEDED) pairTypes.push(pairTypes.length % typeCount);
     pairTypes.length = PAIRS_NEEDED;
     shuffle(pairTypes, rng);
@@ -238,17 +215,18 @@ function buildSolvableLayout(seed: number, typeCount = TILE_TYPE_COUNT): Tile[] 
       typeMap.set(id2, type);
     });
 
-    return positions.map(([x, y, z], index) => ({
+    const tiles = positions.map(([x, y, z], index) => ({
       id: index,
       type: typeMap.get(index) ?? 0,
       x, y, z,
       state: 'idle' as TileState,
     }));
+
+    return { tiles, usedFallback: false };
   }
 
-  // All attempts exhausted (statistically near-impossible) — fall back to
-  // a pure shuffle so the player always gets a board.
-  return buildShuffledLayout(seed);
+  // All attempts exhausted — fall back to a pure shuffle.
+  return { tiles: buildShuffledLayout(seed), usedFallback: true };
 }
 
 /** Pure shuffle — no solvability guarantee (Hard mode). */
@@ -270,19 +248,20 @@ function buildShuffledLayout(seed: number): Tile[] {
 const PRO_KEY = 'mahjong_flow_pro';
 
 export const useMahjongStore = create<MahjongState>((set, get) => ({
-  tiles:             [],
-  selectedId:        null,
-  gameMode:          'daily',
-  difficulty:        'easy',
-  skin:              'classic',
-  elapsedSeconds:    0,
-  isComplete:        false,
-  isPro:             typeof window !== 'undefined' && localStorage.getItem(PRO_KEY) === '1',
-  history:           [],
-  hintedId:          null,
-  sprintMode:        false,
-  sprintSecondsLeft: 180,
-  isFailed:          false,
+  tiles:               [],
+  selectedId:          null,
+  gameMode:            'daily',
+  difficulty:          'easy',
+  skin:                'classic',
+  elapsedSeconds:      0,
+  isComplete:          false,
+  isPro:               typeof window !== 'undefined' && localStorage.getItem(PRO_KEY) === '1',
+  history:             [],
+  hintedId:            null,
+  sprintMode:          false,
+  sprintSecondsLeft:   180,
+  isFailed:            false,
+  isUnsolvableWarning: false,
 
   initBoard(mode: GameMode = get().gameMode ?? 'daily') {
     const { difficulty } = get();
@@ -291,12 +270,29 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
         ? DAILY_SEED
         : dateToSeed(String(Date.now()));
 
-    const tiles =
-      difficulty === 'hard'
-        ? buildShuffledLayout(seed)
-        : buildSolvableLayout(seed, difficulty === 'medium' ? 18 : TILE_TYPE_COUNT);
+    let tiles: Tile[];
+    let usedFallback = false;
 
-    set({ tiles, selectedId: null, gameMode: mode, elapsedSeconds: 0, isComplete: false, history: [], hintedId: null, isFailed: false, sprintSecondsLeft: 180 });
+    if (difficulty === 'hard') {
+      tiles = buildShuffledLayout(seed);
+    } else {
+      const result = buildSolvableLayout(seed, difficulty === 'medium' ? 18 : TILE_TYPE_COUNT);
+      tiles        = result.tiles;
+      usedFallback = result.usedFallback;
+    }
+
+    set({
+      tiles,
+      selectedId:          null,
+      gameMode:            mode,
+      elapsedSeconds:      0,
+      isComplete:          false,
+      history:             [],
+      hintedId:            null,
+      isFailed:            false,
+      sprintSecondsLeft:   180,
+      isUnsolvableWarning: usedFallback,
+    });
   },
 
   tickSecond() {
@@ -318,7 +314,6 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
     if (!clicked) return;
     if (!isTileFree(clicked, tiles)) return;
 
-    // Always clear hint on any interaction
     set({ hintedId: null });
 
     if (selectedId === id) { set({ selectedId: null }); return; }
@@ -398,17 +393,14 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
   reshuffleRemaining() {
     const { tiles, difficulty } = get();
 
-    // Treat 'selected' as 'idle' for the reshuffle — deselect before everything.
     const normalised = tiles.map((t) =>
       t.state === 'selected' ? { ...t, state: 'idle' as TileState } : t,
     );
     const idleTiles = normalised.filter((t) => t.state === 'idle');
     if (idleTiles.length < 2) return;
 
-    // Mix Date.now with Math.random for enough entropy between rapid calls
     const rng = createRng((Date.now() ^ (Math.random() * 0xffffffff | 0)) >>> 0);
 
-    // Helper: pure type-shuffle (hard mode and fallback)
     const pureShuffle = () => {
       const types = idleTiles.map((t) => t.type);
       for (let i = types.length - 1; i > 0; i--) {
@@ -417,7 +409,7 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
       }
       let idx = 0;
       set({
-        tiles: normalised.map((t) => (t.state === 'idle' ? { ...t, type: types[idx++] } : t)),
+        tiles:      normalised.map((t) => (t.state === 'idle' ? { ...t, type: types[idx++] } : t)),
         selectedId: null,
         hintedId:   null,
       });
@@ -425,27 +417,33 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
 
     if (difficulty === 'hard') { pureShuffle(); return; }
 
-    // Easy / Medium — two-phase solvable reshuffle.
-    // Use normalised so the selected tile is treated as idle in the simulation.
-    let simTiles = normalised.map((t) => ({ ...t }));
+    // Set-based O(N) simulation — same two-phase approach as buildSolvableLayout.
+    const simTileMap = new Map<number, Tile>(normalised.map((t) => [t.id, { ...t }]));
+    const occupied   = buildOccupancySet([...simTileMap.values()]);
     const pairOrder: [number, number][] = [];
 
     while (true) {
-      const free = simTiles.filter((t) => isTileFree(t, simTiles));
+      const free: Tile[] = [];
+      for (const tile of simTileMap.values()) {
+        if (tile.state !== 'idle') continue;
+        const key = `${tile.x},${tile.y},${tile.z}`;
+        occupied.delete(key);
+        if (isTileFreeWithSet(tile, occupied)) free.push(tile);
+        occupied.add(key);
+      }
       if (free.length < 2) break;
-      const pool = [...free];
-      const a    = pool.splice(Math.floor(rng() * pool.length), 1)[0];
-      const b    = pool[Math.floor(rng() * pool.length)];
+
+      const a = free[Math.floor(rng() * free.length)];
+      const b = free.filter((t) => t.id !== a.id)[Math.floor(rng() * (free.length - 1))];
       pairOrder.push([a.id, b.id]);
-      simTiles = simTiles.map((t) =>
-        t.id === a.id || t.id === b.id ? { ...t, state: 'matched' as TileState } : t,
-      );
+      simTileMap.set(a.id, { ...a, state: 'matched' });
+      simTileMap.set(b.id, { ...b, state: 'matched' });
+      occupied.delete(`${a.x},${a.y},${a.z}`);
+      occupied.delete(`${b.x},${b.y},${b.z}`);
     }
 
-    // If Phase 1 failed to find any pairs, fall back to pure shuffle
     if (pairOrder.length === 0) { pureShuffle(); return; }
 
-    // Assign types: cycle through type range so each type appears evenly
     const typeCount   = difficulty === 'medium' ? 18 : TILE_TYPE_COUNT;
     const pairCount   = pairOrder.length;
     const typesInPlay = Math.min(typeCount, pairCount);
@@ -467,43 +465,34 @@ export const useMahjongStore = create<MahjongState>((set, get) => ({
           ? { ...t, type: typeMap.get(t.id)! }
           : t,
       ),
-      selectedId: null,
-      hintedId:   null,
+      selectedId:          null,
+      hintedId:            null,
+      isUnsolvableWarning: false, // reshuffle always produces a solvable board
     });
   },
 
   getHint() {
     const { tiles, hintedId } = get();
-
-    // Toggle off if already showing
     if (hintedId !== null) { set({ hintedId: null }); return; }
 
     const free = tiles.filter((t) => isTileFree(t, tiles));
-
-    // Group free tiles by type
     const byType = new Map<number, number[]>();
     for (const t of free) {
       const ids = byType.get(t.type) ?? [];
       ids.push(t.id);
       byType.set(t.type, ids);
     }
-
-    // Pick the first type that has a free pair
     for (const ids of byType.values()) {
-      if (ids.length >= 2) {
-        set({ hintedId: ids[0] });
-        return;
-      }
+      if (ids.length >= 2) { set({ hintedId: ids[0] }); return; }
     }
-    // No free pairs available (deadlock) — do nothing
   },
 
-  setGameMode(mode: GameMode) {
-    get().initBoard(mode);
-  },
+  setGameMode(mode: GameMode) { get().initBoard(mode); },
 
   setSprintMode(on: boolean) {
     set({ sprintMode: on, sprintSecondsLeft: 180, isFailed: false });
     if (on) get().initBoard('practice');
   },
+
+  dismissUnsolvable() { set({ isUnsolvableWarning: false }); },
 }));

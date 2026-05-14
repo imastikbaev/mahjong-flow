@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
-from collections import defaultdict
+from collections import defaultdict, deque
 from typing import Literal
 
 import uvicorn
@@ -170,23 +170,63 @@ class BoardAnalyzer:
         return pairs
 
     # ------------------------------------------------------------------
-    # Burial depth
+    # Burial depth — transitive BFS
     # ------------------------------------------------------------------
 
     def burial_depth(self, tile: Tile) -> int:
         """
-        Number of active tiles that directly or transitively block this tile
-        from above.  We use a single-layer count (direct blockers only) for
-        O(n) cost; a recursive BFS would give truer depth at O(n²).
+        Transitive burial depth via BFS.
+
+        Returns the *total number of tiles* that must be removed (in any valid
+        order) before `tile` becomes accessible — i.e. the size of the
+        transitive closure of the "blocks" relation anchored at `tile`.
+
+        Algorithm
+        ---------
+        We model the board as a directed graph where an edge (A → B) means
+        "tile A directly covers tile B and must be removed first."  Starting
+        from `tile`, we do a BFS *upward* through the graph:
+
+          1. Enqueue `tile`.
+          2. For each dequeued node, find all active tiles that directly cover
+             it (i.e. sit one z-layer above within the ±1 overlap tolerance).
+          3. Enqueue each newly discovered blocker (mark visited to avoid
+             revisiting shared blockers that block multiple paths).
+          4. The answer is the number of unique tiles visited (excluding `tile`
+             itself).
+
+        Complexity: O(N²) worst-case — acceptable for a 144-tile board and
+        called once per tile during `extract_features`.  A spatial hash would
+        reduce this to O(N·k) where k is the average fan-out (~2–4 tiles),
+        but the constant factor would not meaningfully change latency at N=144.
+
+        Example
+        -------
+        If tile C is covered by B, and B is covered by A and A', then:
+          burial_depth(C) = 3  (A, A', B all must move before C is free)
         """
-        return sum(
-            1
-            for t in self.active
-            if t.id != tile.id
-            and t.z > tile.z
-            and abs(t.x - tile.x) < 2
-            and abs(t.y - tile.y) < 2
-        )
+        visited: set[int] = set()   # IDs of discovered blockers
+        queue:   deque[Tile] = deque([tile])
+
+        while queue:
+            current = queue.popleft()
+
+            for candidate in self.active:
+                if candidate.id in visited or candidate.id == tile.id:
+                    continue
+
+                # A tile is a direct blocker of `current` when it sits in the
+                # layer immediately above and overlaps within ±1 unit on both
+                # the x and y axes (mirrors the TypeScript isTileFree predicate).
+                if (
+                    candidate.z == current.z + 1
+                    and abs(candidate.x - current.x) < 2
+                    and abs(candidate.y - current.y) < 2
+                ):
+                    visited.add(candidate.id)
+                    queue.append(candidate)
+
+        return len(visited)
 
     # ------------------------------------------------------------------
     # Feature extraction — single source of truth for both the heuristic

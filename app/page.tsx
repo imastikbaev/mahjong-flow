@@ -17,7 +17,8 @@ import AICoach      from '@/components/AICoach';
 import ProfileModal from '@/components/ProfileModal';
 import RulesModal   from '@/components/RulesModal';
 import AuthModal    from '@/components/AuthModal';
-import QuestsPanel  from '@/components/QuestsPanel';
+import QuestsPanel      from '@/components/QuestsPanel';
+import UnsolvableToast  from '@/components/UnsolvableToast';
 
 export default function Home() {
   const isComplete        = useMahjongStore((s) => s.isComplete);
@@ -204,6 +205,8 @@ export default function Home() {
           {showLeaderboard ? '✕ hide scores' : '◎ leaderboard'}
         </button>
       </div>
+
+      <UnsolvableToast />
 
       {/* Modals */}
       <AuthModal    isOpen={authOpen}    onClose={() => setAuthOpen(false)} />

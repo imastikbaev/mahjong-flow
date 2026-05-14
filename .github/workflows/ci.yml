@@ -1,0 +1,94 @@
+name: CI
+
+# Run on every PR targeting main, and on direct pushes to main.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel any in-progress run for the same branch when a new push arrives.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Frontend — TypeScript, ESLint, Vitest
+  # ---------------------------------------------------------------------------
+  frontend:
+    name: Frontend (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node: ['20']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Type-check without emitting files — catches interface mismatches
+      # that the build step might mask via Babel/SWC transpilation.
+      - name: TypeScript — type check
+        run: npx tsc --noEmit
+
+      # ESLint with the Next.js config (includes react-hooks, a11y rules).
+      - name: ESLint
+        run: npm run lint
+
+      # Vitest unit tests for the tile freedom engine and store logic.
+      - name: Vitest — unit tests
+        run: npx vitest run --reporter=verbose
+
+  # ---------------------------------------------------------------------------
+  # Backend — Python, Ruff, Pytest
+  # ---------------------------------------------------------------------------
+  backend:
+    name: Backend (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python: ['3.11']
+
+    defaults:
+      run:
+        working-directory: ai-coach
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Ruff covers both linting and import sorting — faster than flake8+isort.
+      # Falls back to flake8 if ruff is not in requirements.txt.
+      - name: Ruff — lint
+        run: |
+          if pip show ruff > /dev/null 2>&1; then
+            ruff check .
+          else
+            pip install flake8
+            flake8 . --max-line-length=100 --extend-ignore=E501
+          fi
+
+      # Pytest with verbose output so failures are easy to read in the log.
+      - name: Pytest — unit tests
+        run: pytest test_analyzer.py -v --tb=short
