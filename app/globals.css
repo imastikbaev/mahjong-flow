@@ -37,18 +37,26 @@ body {
 }
 
 /*
-  Smooth theme transition.
-  Only transitions color-related properties — Framer Motion's
-  transform / opacity / filter animations are completely unaffected.
-  Tailwind utility classes (specificity 0-1-0) override these defaults
-  (specificity 0-0-0) wherever a custom duration / easing is set.
+  Smooth theme transition via View Transitions API.
+  The browser snapshots the full page before/after the .dark class swap
+  and cross-fades the two snapshots — no per-element transitions needed,
+  no conflict with Framer Motion.
+  ThemeToggle.tsx wraps setTheme() in document.startViewTransition().
 */
-*,
-*::before,
-*::after {
-  transition-property: color, background-color, border-color, box-shadow;
-  transition-duration: 220ms;
-  transition-timing-function: ease;
+::view-transition-old(root) {
+  animation: 300ms ease both vt-fade-out;
+}
+::view-transition-new(root) {
+  animation: 300ms ease both vt-fade-in;
+}
+
+@keyframes vt-fade-out {
+  from { opacity: 1; filter: blur(0px);   }
+  to   { opacity: 0; filter: blur(3px);   }
+}
+@keyframes vt-fade-in {
+  from { opacity: 0; filter: blur(3px);   }
+  to   { opacity: 1; filter: blur(0px);   }
 }
 
 /* Hint tile pulse — neon violet, visible on both light and dark backgrounds */

@@ -4,6 +4,13 @@ import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+// View Transitions API — not yet in all TS lib typings
+declare global {
+  interface Document {
+    startViewTransition?: (cb: () => void) => { ready: Promise<void>; finished: Promise<void> };
+  }
+}
+
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -13,9 +20,18 @@ export default function ThemeToggle() {
 
   const isDark = theme === 'dark';
 
+  function toggleTheme() {
+    const next = isDark ? 'light' : 'dark';
+    if (!document.startViewTransition) {
+      setTheme(next);
+      return;
+    }
+    document.startViewTransition(() => setTheme(next));
+  }
+
   return (
     <button
-      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      onClick={toggleTheme}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       className={[
         'w-8 h-8 flex items-center justify-center rounded-md',
