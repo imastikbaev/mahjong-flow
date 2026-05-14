@@ -117,7 +117,7 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
         </RuleSection>
 
         <RuleSection icon="✦" title="Account required">
-          Quest progress is saved to your account. Sign in (top-right) with Google or email to unlock
+          Quest progress is saved to your account. Sign in (top-left) with Google or email to unlock
           tracking and keep your streak across devices.
         </RuleSection>
 
