@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { useMahjongStore, isTileFree } from '@/store/mahjongStore';
+import { useMahjongStore } from '@/store/mahjongStore';
 import TileCell, { TILE_W, TILE_H, STEP_X, STEP_Y, LAYER_OFFSET } from './TileCell';
 
 
@@ -15,10 +15,46 @@ export default function MahjongBoard() {
 
   useEffect(() => { initBoard(); }, [initBoard]);
 
+  // O(N) freedom check — build a position-keyed set first so every
+  // per-tile lookup is O(1) rather than O(N), avoiding the O(N²) cost
+  // that accumulates across the 144-tile board on every state update.
   const freeIds = useMemo(() => {
-    const set = new Set<number>();
-    tiles.forEach((t) => { if (isTileFree(t, tiles)) set.add(t.id); });
-    return set;
+    // Phase 1: index all non-matched tiles by their position.
+    const occupied = new Set<string>();
+    for (const t of tiles) {
+      if (t.state !== 'matched') occupied.add(`${t.x},${t.y},${t.z}`);
+    }
+
+    const result = new Set<number>();
+    for (const tile of tiles) {
+      if (tile.state !== 'idle') continue;
+
+      // Coverage: any tile at z+1 within ±1 unit on both axes?
+      // Sampling all 9 candidate cells handles half-step offsets.
+      let covered = false;
+      outer: for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          if (occupied.has(`${tile.x + dx},${tile.y + dy},${tile.z + 1}`)) {
+            covered = true;
+            break outer;
+          }
+        }
+      }
+      if (covered) continue;
+
+      // Lateral: mirrors isTileFree — within 2 x-units, within 1 y-unit.
+      // Check both exact-step (dx=2) and half-step (dx=1) positions.
+      let blockedLeft = false;
+      let blockedRight = false;
+      for (let dy = -1; dy <= 1; dy++) {
+        if (!blockedLeft  && (occupied.has(`${tile.x - 2},${tile.y + dy},${tile.z}`) ||
+                              occupied.has(`${tile.x - 1},${tile.y + dy},${tile.z}`))) blockedLeft  = true;
+        if (!blockedRight && (occupied.has(`${tile.x + 2},${tile.y + dy},${tile.z}`) ||
+                              occupied.has(`${tile.x + 1},${tile.y + dy},${tile.z}`))) blockedRight = true;
+      }
+      if (!blockedLeft || !blockedRight) result.add(tile.id);
+    }
+    return result;
   }, [tiles]);
 
   const { canvasW, canvasH } = useMemo(() => {

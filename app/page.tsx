@@ -11,7 +11,7 @@ import { useQuests }       from '@/lib/hooks/useQuests';
 import TopBar       from '@/components/TopBar';
 import MahjongBoard from '@/components/MahjongBoard';
 import ProModal     from '@/components/ProModal';
-import WinModal     from '@/components/WinModal';
+import ResultModal  from '@/components/ResultModal';
 import Leaderboard  from '@/components/Leaderboard';
 import AICoach      from '@/components/AICoach';
 import ProfileModal from '@/components/ProfileModal';
@@ -37,7 +37,7 @@ export default function Home() {
   const { quests, updateProgress }          = useQuests(authUser);
 
   const [proOpen,         setProOpen]         = useState(false);
-  const [winOpen,         setWinOpen]         = useState(false);
+  const [resultOpen,      setResultOpen]      = useState(false);
   const [profileOpen,     setProfileOpen]     = useState(false);
   const [rulesOpen,       setRulesOpen]       = useState(false);
   const [authOpen,        setAuthOpen]        = useState(false);
@@ -50,7 +50,7 @@ export default function Home() {
   // Game complete (win)
   useEffect(() => {
     if (!isComplete) return;
-    const timer = setTimeout(() => setWinOpen(true), 420);
+    const timer = setTimeout(() => setResultOpen(true), 420);
 
     if (submittedAtRef.current !== elapsedSeconds) {
       submittedAtRef.current = elapsedSeconds;
@@ -95,7 +95,7 @@ export default function Home() {
   // Sprint timeout (fail)
   useEffect(() => {
     if (!isFailed) return;
-    const timer = setTimeout(() => setWinOpen(true), 300);
+    const timer = setTimeout(() => setResultOpen(true), 300);
 
     if (submittedAtRef.current !== elapsedSeconds) {
       submittedAtRef.current = elapsedSeconds;
@@ -120,7 +120,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!isComplete && !isFailed) {
-      setWinOpen(false);
+      setResultOpen(false);
       submittedAtRef.current = null;
     }
   }, [isComplete, isFailed]);
@@ -217,11 +217,12 @@ export default function Home() {
         user={authUser}
         onSignInClick={() => { setProfileOpen(false); setAuthOpen(true); }}
       />
-      <WinModal
-        isOpen={winOpen}
-        onClose={() => setWinOpen(false)}
+      <ResultModal
+        isOpen={resultOpen}
+        onClose={() => setResultOpen(false)}
         elapsedSeconds={elapsedSeconds}
-        onViewLeaderboard={() => { setWinOpen(false); setShowLeaderboard(true); }}
+        status={isFailed ? 'fail' : 'win'}
+        onViewLeaderboard={() => { setResultOpen(false); setShowLeaderboard(true); }}
       />
     </div>
   );

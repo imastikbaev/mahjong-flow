@@ -19,11 +19,12 @@
 2. [Core Philosophy](#core-philosophy)
 3. [Architecture](#architecture)
 4. [Key Engineering Solutions](#key-engineering-solutions)
-5. [Business Logic](#business-logic)
-6. [Tech Stack](#tech-stack)
-7. [Installation](#installation)
-8. [Database](#database)
-9. [Environment Variables](#environment-variables)
+5. [Game Mechanics](#game-mechanics)
+6. [Business Logic](#business-logic)
+7. [Tech Stack](#tech-stack)
+8. [Installation](#installation)
+9. [Database](#database)
+10. [Environment Variables](#environment-variables)
 
 ---
 
@@ -139,6 +140,26 @@ The browser calls `supabase.rpc('increment_quest_progress', { ... })` — one ne
 
 ---
 
+## Game Mechanics
+
+### Sprint Mode
+
+A 180-second countdown overlaid on a standard Practice board. Score formula: `pairs_cleared × 100 + remaining_seconds × 10`. The timer indicator turns red below 30 seconds. When the clock reaches zero the board is locked and a `ResultModal` is shown with `status: 'fail'`, rendering a "Time's up." headline rather than the win screen. Sprint mode is Pro-only.
+
+### Undo System
+
+Every successful pair match appends a pre-match snapshot of the full tile array to a `history: Tile[][]` ring buffer capped at 20 entries (Zustand store). `undoMove()` pops the last snapshot and replaces the current tile state, restoring both tiles to `'idle'`. No network call required. Undo is Pro-only and clears the hint state to prevent stale highlights.
+
+### Solvable Reshuffle
+
+When no free pairs remain (detected by `hasAvailableMoves()`), the board enters a deadlock state and the shuffle button pulses. `reshuffleRemaining()` runs the same two-phase simulation used by `buildSolvableLayout` — but scoped only to the remaining idle tiles and using a fresh entropy source (`Date.now() ^ Math.random()`). If the simulation stalls before covering all remaining tiles, it falls back to a pure type-shuffle so the player always gets a playable board.
+
+### Responsive Board Scaling
+
+`MahjongBoard` uses a `ResizeObserver` attached to its flex container to compute the pixel dimensions of the full 3D canvas (`canvasW × canvasH`, derived from the maximum `x`, `y`, `z` coordinates across all tile positions). A CSS `scale()` transform is applied to an inner wrapper using `transformOrigin: 'top left'`, with the outer container sized to `canvasW × scale` so the flex centering tracks correctly. Scale is clamped to `[0.4, 1.0]` — never larger than native size, never small enough to become unplayable.
+
+---
+
 ## Business Logic
 
 The freemium model is UI-driven: the upgrade sells a measurably better cognitive experience rather than locked features.
@@ -193,14 +214,29 @@ uvicorn main:app --reload --port 8000
 
 ## Database
 
-Apply migrations in order via Supabase Dashboard → SQL Editor:
+Apply the single unified schema via Supabase Dashboard → SQL Editor:
 
 ```
-supabase/migrations/auth_and_quests.sql          -- users trigger, quests_progress, RLS
-supabase/migrations/increment_quest_progress.sql -- atomic RPC function
+supabase/schema.sql   -- all tables, triggers, RLS policies, indexes, atomic RPC
 ```
 
-The migrations are idempotent (`create or replace`, `drop trigger if exists`, `create table if not exists`).
+The file is fully idempotent (`create or replace`, `create table if not exists`, `drop trigger if exists`, `drop policy if exists`) — safe to re-run after schema changes.
+
+Tables created:
+
+| Table | Purpose |
+|-------|---------|
+| `public.users` | Player profiles, references `auth.users(id)` |
+| `public.leaderboard` | Personal-best scores, unique on `(user_id, date, type)` |
+| `public.quests_progress` | Quest tracking, unique on `(user_id, quest_id)` |
+
+RLS summary:
+
+| Table | Read | Write |
+|-------|------|-------|
+| `users` | Public | Own row (`auth.uid() = id`) |
+| `leaderboard` | Public | Own row (`auth.uid() = user_id`) |
+| `quests_progress` | Own row | Own row |
 
 ---
 

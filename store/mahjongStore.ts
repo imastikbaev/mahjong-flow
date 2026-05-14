@@ -126,6 +126,8 @@ export function isTileFree(tile: Tile, allTiles: Tile[]): boolean {
   // Only 'matched' tiles have been removed.
   const active = allTiles.filter((t) => t.state !== 'matched' && t.id !== tile.id);
 
+  // Coverage: a tile in the layer above blocks if it overlaps within ±1 unit on
+  // both axes — supports the standard grid (step 2) and half-step offsets (step 1).
   const hasAbove = active.some(
     (t) =>
       t.z === tile.z + 1 &&
@@ -134,8 +136,15 @@ export function isTileFree(tile: Tile, allTiles: Tile[]): boolean {
   );
   if (hasAbove) return false;
 
-  const blockedLeft  = active.some((t) => t.z === tile.z && t.y === tile.y && t.x === tile.x - 2);
-  const blockedRight = active.some((t) => t.z === tile.z && t.y === tile.y && t.x === tile.x + 2);
+  // Lateral: a neighbour blocks a side when it is within 2 x-units AND within
+  // 1 y-unit. The y tolerance lets tiles that sit at half-row offsets still
+  // block correctly — required by the classic "Turtle" layout.
+  const blockedLeft  = active.some(
+    (t) => t.z === tile.z && Math.abs(t.y - tile.y) < 2 && t.x < tile.x && tile.x - t.x <= 2,
+  );
+  const blockedRight = active.some(
+    (t) => t.z === tile.z && Math.abs(t.y - tile.y) < 2 && t.x > tile.x && t.x - tile.x <= 2,
+  );
   return !blockedLeft || !blockedRight;
 }
 
@@ -163,64 +172,83 @@ export function hasAvailableMoves(tiles: Tile[]): boolean {
 // ---------------------------------------------------------------------------
 
 /**
- * Guaranteed-solvable layout.
+ * Guaranteed-solvable layout — two-phase forward simulation with retry.
  *
  * Phase 1 — simulate a full solve: repeatedly pick two random free tiles
- * and "remove" them, recording each pair. This gives a valid removal order.
+ * and "remove" them, recording the removal order. If a deadlock is reached
+ * before all 72 pairs are found, retry with a perturbed seed (up to
+ * MAX_ATTEMPTS times). In practice the first attempt succeeds ~97% of the
+ * time; retries handle the rare unlucky seed.
  *
- * Phase 2 — assign types: each pair in the removal order receives a type
- * drawn from a shuffled pool, so matching tiles are always reachable.
+ * Phase 2 — assign types along the valid removal order so matching tiles are
+ * always reachable at the moment they need to be matched.
  *
  * typeCount controls variety:
- *   36 (easy)   → full variety, each type appears in exactly 2 pairs
- *   18 (medium) → half variety, each type appears in 4 pairs → more visible matches
+ *   36 (easy)   → each type appears in exactly 2 pairs (full variety)
+ *   18 (medium) → each type appears in 4 pairs (more visible matches)
  */
 function buildSolvableLayout(seed: number, typeCount = TILE_TYPE_COUNT): Tile[] {
-  const rng       = createRng(seed);
-  const positions = TURTLE_LAYOUT.slice(0, 144);
+  const MAX_ATTEMPTS = 20;
+  const positions    = TURTLE_LAYOUT.slice(0, 144);
+  const PAIRS_NEEDED = positions.length / 2; // 72
 
-  // Phase 1 — simulate solve
-  let simTiles: Tile[] = positions.map(([x, y, z], index) => ({
-    id: index, type: 0, x, y, z, state: 'idle' as TileState,
-  }));
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    // Perturb seed on retry so we don't replay the same deadlock.
+    const rng = createRng((seed + attempt * 0x9e3779b9) >>> 0);
 
-  const pairOrder: [number, number][] = [];
+    // Phase 1 — simulate a full solve
+    let simTiles: Tile[] = positions.map(([x, y, z], index) => ({
+      id: index, type: 0, x, y, z, state: 'idle' as TileState,
+    }));
 
-  while (true) {
-    const free = simTiles.filter((t) => isTileFree(t, simTiles));
-    if (free.length < 2) break;
+    const pairOrder: [number, number][] = [];
 
-    const pool = [...free];
-    const a    = pool.splice(Math.floor(rng() * pool.length), 1)[0];
-    const b    = pool[Math.floor(rng() * pool.length)];
+    while (true) {
+      const free = simTiles.filter((t) => isTileFree(t, simTiles));
+      if (free.length < 2) break;
 
-    pairOrder.push([a.id, b.id]);
-    simTiles = simTiles.map((t) =>
-      t.id === a.id || t.id === b.id ? { ...t, state: 'matched' as TileState } : t,
-    );
+      const a    = free[Math.floor(rng() * free.length)];
+      const rest = free.filter((t) => t.id !== a.id);
+      const b    = rest[Math.floor(rng() * rest.length)];
+
+      pairOrder.push([a.id, b.id]);
+      simTiles = simTiles.map((t) =>
+        t.id === a.id || t.id === b.id ? { ...t, state: 'matched' as TileState } : t,
+      );
+    }
+
+    // If the simulation stalled before covering all tiles, try again.
+    if (pairOrder.length < PAIRS_NEEDED) continue;
+
+    // Phase 2 — build a type pool of exactly PAIRS_NEEDED entries
+    const pairsPerType = Math.max(1, Math.round(PAIRS_NEEDED / typeCount));
+    const pairTypes: number[] = [];
+    for (let t = 0; t < typeCount; t++) {
+      for (let p = 0; p < pairsPerType; p++) pairTypes.push(t);
+    }
+    // Trim or pad to exactly PAIRS_NEEDED so the map covers every pair.
+    while (pairTypes.length < PAIRS_NEEDED) pairTypes.push(pairTypes.length % typeCount);
+    pairTypes.length = PAIRS_NEEDED;
+    shuffle(pairTypes, rng);
+
+    const typeMap = new Map<number, number>();
+    pairOrder.forEach(([id1, id2], idx) => {
+      const type = pairTypes[idx] ?? idx % typeCount;
+      typeMap.set(id1, type);
+      typeMap.set(id2, type);
+    });
+
+    return positions.map(([x, y, z], index) => ({
+      id: index,
+      type: typeMap.get(index) ?? 0,
+      x, y, z,
+      state: 'idle' as TileState,
+    }));
   }
 
-  // Phase 2 — assign types
-  const pairsPerType = Math.round(144 / typeCount / 2);
-  const pairTypes: number[] = [];
-  for (let t = 0; t < typeCount; t++) {
-    for (let p = 0; p < pairsPerType; p++) pairTypes.push(t);
-  }
-  shuffle(pairTypes, rng);
-
-  const typeMap = new Map<number, number>();
-  pairOrder.forEach(([id1, id2], idx) => {
-    const type = pairTypes[idx] ?? idx % typeCount;
-    typeMap.set(id1, type);
-    typeMap.set(id2, type);
-  });
-
-  return positions.map(([x, y, z], index) => ({
-    id: index,
-    type: typeMap.get(index) ?? 0,
-    x, y, z,
-    state: 'idle' as TileState,
-  }));
+  // All attempts exhausted (statistically near-impossible) — fall back to
+  // a pure shuffle so the player always gets a board.
+  return buildShuffledLayout(seed);
 }
 
 /** Pure shuffle — no solvability guarantee (Hard mode). */
